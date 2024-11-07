@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Карта с Участками и Объектами</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://api-maps.yandex.ru/2.1/?apikey=0466250c-97ea-4e27-8c2c-cef3a58398a4&lang=ru_RU" type="text/javascript"></script>
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <div id="container">
+        
+        
+        <div id="controls">
+            <h1>Настройки карты</h1>
+            <div class="section">
+                <label class="zone-label">
+                    <input type="checkbox" id="zone1" onclick="toggleZone(1)">
+                    <span class="zone-title">Зона 1</span>
+                </label>
+                <div class="subsection">
+                    <label class="category-label">
+                        <input type="checkbox" id="group1-playgrounds" onclick="toggleGroup(1, 'playgrounds')">
+                        <span class="category-title">Детские площадки</span>
+                    </label>
+                    <div class="object-list">
+                        <label><input type="checkbox" id="object1-playgrounds-1" onclick="toggleObject(1, 'playgrounds', 1)"> Детская площадка 1</label>
+                        <label><input type="checkbox" id="object1-playgrounds-2" onclick="toggleObject(1, 'playgrounds', 2)"> Детская площадка 2</label>
+                        <label><input type="checkbox" id="object1-playgrounds-3" onclick="toggleObject(1, 'playgrounds', 3)"> Детская площадка 3</label>
+                    </div>
+                </div>
+                <div class="subsection">
+                    <label class="category-label">
+                        <input type="checkbox" id="group1-roadwork" onclick="toggleGroup(1, 'roadwork')">
+                        <span class="category-title">Ремонт дорог</span>
+                    </label>
+                    <div class="object-list">
+                        <label><input type="checkbox" id="object1-roadwork-1" onclick="toggleObject(1, 'roadwork', 1)"> Ремонт дороги 1</label>
+                        <label><input type="checkbox" id="object1-roadwork-2" onclick="toggleObject(1, 'roadwork', 2)"> Ремонт дороги 2</label>
+                        <label><input type="checkbox" id="object1-roadwork-3" onclick="toggleObject(1, 'roadwork', 3)"> Ремонт дороги 3</label>
+                    </div>
+                </div>
+            </div>
+            <div class="section">
+                <label class="zone-label">
+                    <input type="checkbox" id="zone2" onclick="toggleZone(2)">
+                    <span class="zone-title">Зона 2</span>
+                </label>
+                <div class="subsection">
+                    <label class="category-label">
+                        <input type="checkbox" id="group2-playgrounds" onclick="toggleGroup(2, 'playgrounds')">
+                        <span class="category-title">Детские площадки</span>
+                    </label>
+                    <div class="object-list">
+                        <label><input type="checkbox" id="object2-playgrounds-1" onclick="toggleObject(2, 'playgrounds', 1)"> Детская площадка 1</label>
+                        <label><input type="checkbox" id="object2-playgrounds-2" onclick="toggleObject(2, 'playgrounds', 2)"> Детская площадка 2</label>
+                        <label><input type="checkbox" id="object2-playgrounds-3" onclick="toggleObject(2, 'playgrounds', 3)"> Детская площадка 3</label>
+                    </div>
+                </div>
+                <div class="subsection">
+                    <label class="category-label">
+                        <input type="checkbox" id="group2-roadwork" onclick="toggleGroup(2, 'roadwork')">
+                        <span class="category-title">Ремонт дорог</span>
+                    </label>
+                    <div class="object-list">
+                        <label><input type="checkbox" id="object2-roadwork-1" onclick="toggleObject(2, 'roadwork', 1)"> Ремонт дороги 1</label>
+                        <label><input type="checkbox" id="object2-roadwork-2" onclick="toggleObject(2, 'roadwork', 2)"> Ремонт дороги 2</label>
+                        <label><input type="checkbox" id="object2-roadwork-3" onclick="toggleObject(2, 'roadwork', 3)"> Ремонт дороги 3</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button id="toggle-button">Скрыть настройки</button>
+        <div id="map"></div>
+    </div>
+</body>
+</html>

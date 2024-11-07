@@ -1,0 +1,169 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #f4f6f9;
+    color: #333;
+}
+
+#container {
+    display: flex;
+    width: 100%;
+    height: 100%;
+}
+
+#controls {
+    width: 300px;
+    padding: 20px;
+    background-color: #ffffff;
+    border-right: 2px solid #0078FF;
+    overflow-y: auto;
+}
+
+#controls h1 {
+    color: #0078FF;
+    margin-bottom: 20px;
+    font-size: 24px;
+}
+
+.section {
+    margin-bottom: 20px;
+}
+
+.zone-label, .category-label {
+    display: flex;
+    align-items: center;
+    margin: 10px 0;
+}
+
+.zone-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin-left: 8px;
+    color: #333;
+}
+
+.category-title {
+    font-size: 16px;
+    font-weight: bold;
+    margin-left: 8px;
+    color: #0078FF;
+}
+
+.subsection {
+    margin-left: 20px;
+    border-left: 2px solid #0078FF;
+    padding-left: 10px;
+    margin-top: 10px;
+}
+
+.object-list {
+    margin-left: 20px;
+}
+
+label {
+    display: block;
+    margin: 5px 0;
+    cursor: pointer;
+}
+
+input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+#map {
+    flex-grow: 1;
+    height: 100%;
+}
+
+#toggle-button {
+    padding: 8px 12px;
+    background-color: #0078FF;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 1000;
+}
+
+#toggle-button:hover {
+    background-color: #005bb5;
+}
+
+.hidden {
+    display: none;
+}
+
+.balloon-image {
+     max-width: 100%;
+    height: auto; 
+    max-width: 100%; 
+    cursor: pointer;
+}
+
+.balloon-title {
+    font-size: 20px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.balloon-link {
+    font-size: 16px;
+    color: #1a73e8;
+    text-decoration: none;
+}
+
+.balloon-link:hover {
+    text-decoration: underline;
+}
+
+.popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.popup-content {
+    position: relative;
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    max-width: 90%;
+    max-height: 90%;
+}
+
+.popup-image {
+    max-width: 100%;
+    max-height: 80vh;
+    display: block;
+    margin: 0 auto;
+}
+
+.popup-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+    cursor: pointer;
+}
