@@ -4,9 +4,13 @@ const spreadsheetId = '13aWpgiOD_uZodKXpxLzkLAgidljTH8UZX3F78czGfwQ';
 let myMap;
 let zones = {}; // Хранит зоны, группы и объекты
 
-function fetchZoneData(sheetName, zoneId, color) {
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${sheetName}?key=${apiKey}`;
-    
+function sanitizeId(name) {
+    return name.replace(/\s+/g, '_').replace(/[^\p{L}\d\-_]/gu, '');
+}
+
+function fetchZoneData(sheetName, zoneName, color) {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}?key=${apiKey}`;
+
     fetch(url)
         .then(response => {
             if (!response.ok) {
@@ -16,63 +20,61 @@ function fetchZoneData(sheetName, zoneId, color) {
         })
         .then(data => {
             const rows = data.values;
-            if (!rows) {
-                throw new Error(`Данные с листа ${sheetName} пусты или недоступны`);
-            }
+            if (!rows) throw new Error(`Данные с листа ${sheetName} пусты или недоступны`);
 
             // Создаем зону, если она не была создана ранее
-            if (!zones[zoneId]) {
-                zones[zoneId] = { polygon: null, groups: {} };
-            }
+            if (!zones[zoneName]) zones[zoneName] = { polygon: null, groups: {} };
 
-            // Создаем контейнеры в HTML для зоны и групп
-            generateZoneHTML(zoneId, color);
+            generateZoneHTML(zoneName, color);
 
-            // Создаем полигон зоны
-            const coordinates = zoneId === 1 ? [[59.90, 30.20], [59.96, 30.20], [59.96, 30.40], [59.90, 30.40], [59.90, 30.20]] : 
-                                               [[59.85, 30.10], [59.91, 30.10], [59.91, 30.30], [59.85, 30.30], [59.85, 30.10]];
-            zones[zoneId].polygon = new ymaps.Polygon([coordinates], {}, {
-                fillColor: color,
-                strokeColor: '#333',
-                opacity: 0.4
-            });
+            // Считываем координаты полигона из ячейки I2 (строка 1, столбец 8)
+            const polygonCoordsString = rows[1][8]; // Индексы начинаются с 0
+            let coordinates;
+            if (polygonCoordsString) {
+    try {
+        coordinates = JSON.parse(polygonCoordsString);
+        coordinates = swapCoordinates(coordinates); // Меняем порядок координат
+        zones[zoneName].polygon = new ymaps.Polygon(coordinates, {}, {
+            fillColor: color,
+            strokeColor: '#333',
+            opacity: 0.4,
+        });
+        console.log(`Координаты полигона для зоны ${zoneName}:`, coordinates);
+    } catch (e) {
+        console.error(`Ошибка при парсинге координат полигона для зоны ${zoneName}:`, e);
+    }
+}
+
 
             // Добавляем обработчик на чекбокс зоны
-            document.getElementById(`zone${zoneId}`).addEventListener('change', () => toggleZone(zoneId));
+            document.getElementById(`zone${sanitizeId(zoneName)}`).addEventListener('change', () => toggleZone(zoneName));
 
             for (let i = 1; i < rows.length; i++) {
                 const [id, group, title, lat, lon, link, imageUrl, iconPreset] = rows[i];
                 const latitude = parseFloat(lat);
                 const longitude = parseFloat(lon);
 
-                if (!zones[zoneId].groups[group]) {
-                    zones[zoneId].groups[group] = [];
-                    generateGroupHTML(zoneId, group);
+                if (!zones[zoneName].groups[group]) {
+                    zones[zoneName].groups[group] = [];
+                    generateGroupHTML(zoneName, group);
                 }
 
-                // Обрабатываем iconPreset
-                const cleanIconPreset = iconPreset ? iconPreset.replace(/['"]/g, '').trim() : '';
+                console.log(`Adding ${title} to ${zoneName} -> ${group}`); 
 
-                // Добавляем отладочный вывод
-                console.log(`Обработка объекта ID: ${id}, iconPreset: "${cleanIconPreset}"`);
+                const placemarkPreset = iconPreset ? iconPreset.replace(/['"]/g, '').trim() : 'islands#blueDotIcon';
+                const placemark = new ymaps.Placemark([latitude, longitude], {
+                    balloonContent: `
+                        <div>
+                            <div class="balloon-title">${title}</div>
+                            <a href="${link}" target="_blank" class="balloon-link">Подробнее</a><br>
+                            <img src="${imageUrl}" alt="${title}" class="balloon-image" style="width:200px; cursor:pointer;">
+                        </div>
+                    `
+                }, {
+                    preset: placemarkPreset
+                });
 
-                const placemark = new ymaps.Placemark(
-                    [latitude, longitude],
-                    {
-                        balloonContent: `
-                            <div>
-                                <div class="balloon-title">${title}</div>
-                                <a href="${link}" target="_blank" class="balloon-link">Подробнее</a><br>
-                                <img src="${imageUrl}" alt="${title}" class="balloon-image" style="width:200px; cursor:pointer;">
-                            </div>
-                        `
-                    },
-                    {
-                        preset: cleanIconPreset || 'islands#blueDotIcon'
-                    }
-                );
-
-                // Добавляем обработчик события 'balloonopen'
+                // Добавляем обработчик события 'balloonopen' для открытия popup при клике на изображение
                 placemark.events.add('balloonopen', function (e) {
                     const target = e.get('target');
                     target.balloon.getOverlay().then(function(overlay) {
@@ -87,35 +89,36 @@ function fetchZoneData(sheetName, zoneId, color) {
                     });
                 });
 
-                zones[zoneId].groups[group].push({ id, placemark });
-                generateObjectHTML(zoneId, group, id, title);
+                zones[zoneName].groups[group].push({ id, placemark });
+                generateObjectHTML(zoneName, group, id, title);
             }
 
             // Добавляем обработчики на чекбоксы групп и объектов
-            for (let group in zones[zoneId].groups) {
-                document.getElementById(`group${zoneId}-${group}`).addEventListener('change', () => toggleGroup(zoneId, group));
-                zones[zoneId].groups[group].forEach(obj => {
-                    const checkbox = document.getElementById(`object${zoneId}-${group}-${obj.id}`);
+            for (let group in zones[zoneName].groups) {
+                document.getElementById(`group${sanitizeId(zoneName)}-${sanitizeId(group)}`).addEventListener('change', () => toggleGroup(zoneName, group));
+                zones[zoneName].groups[group].forEach(obj => {
+                    const checkbox = document.getElementById(`object${sanitizeId(zoneName)}-${sanitizeId(group)}-${obj.id}`);
                     if (checkbox) {
-                        checkbox.addEventListener('change', () => toggleObject(zoneId, group, obj.id));
+                        checkbox.addEventListener('change', () => toggleObject(zoneName, group, obj.id));
                     }
                 });
             }
-
         })
         .catch(error => console.error(`Ошибка при загрузке данных с листа ${sheetName}:`, error));
 }
 
+
+
 ymaps.ready(init);
 
 function init() {
-    myMap = new ymaps.Map("map", {
-        center: [59.93, 30.31],
-        zoom: 10
-    });
+    myMap = new ymaps.Map("map", { center: [60.007899, 30.390313], zoom: 14 });
 
-    fetchZoneData('Sheet1', 1, '#FFA50088');
-    fetchZoneData('Sheet2', 2, '#4682B488');
+    // Загрузка данных для каждого округа
+    fetchZoneData('46-ой Округ', '46-ой Округ', '#FFA50088');
+    fetchZoneData('47-й Округ', '47-й Округ', '#4682B488');
+    fetchZoneData('48-й ОКруг', '48-й ОКруг', '#1E90FF');
+    fetchZoneData('45-й Округ', '45-й Округ', '#32CD32');
 
     const controls = document.getElementById('controls');
     const toggleButton = document.getElementById('toggle-button');
@@ -133,60 +136,47 @@ function init() {
 
 // Функции для управления видимостью объектов
 
-function toggleZone(zoneId) {
-    const zone = zones[zoneId];
+function toggleZone(zoneName) {
+    const zone = zones[zoneName];
     if (!zone) return;
 
-    const zoneCheckbox = document.getElementById(`zone${zoneId}`);
+    const zoneCheckbox = document.getElementById(`zone${sanitizeId(zoneName)}`);
 
-    if (zoneCheckbox.checked) {
+    if (zoneCheckbox && zoneCheckbox.checked) {
         myMap.geoObjects.add(zone.polygon);
-    } else {
+    } else if (zoneCheckbox) {
         myMap.geoObjects.remove(zone.polygon);
-    }
-
-    // Проверка состояния чекбоксов для Зоны 1 и Зоны 2
-    const zone1Checked = document.getElementById("zone1").checked;
-    const zone2Checked = document.getElementById("zone2").checked;
-
-    if (zone1Checked && zone2Checked) {
-        // Если обе зоны выбраны, отцентрировать и настроить масштаб, чтобы охватить обе зоны
-        const bounds = [
-            [59.85, 30.10], 
-            [59.96, 30.40]
-        ];
-        myMap.setBounds(bounds, { checkZoomRange: true });
-    } else if (zone1Checked) {
-        // Если выбрана только Зона 1
-        myMap.setCenter([59.93, 30.31], 12);
-    } else if (zone2Checked) {
-        // Если выбрана только Зона 2
-        myMap.setCenter([59.88, 30.20], 12);
     }
 
     // Обновляем состояние групп и объектов внутри зоны
     for (let groupName in zone.groups) {
-        const groupCheckbox = document.getElementById(`group${zoneId}-${groupName}`);
-        groupCheckbox.checked = zoneCheckbox.checked;
-
-        zone.groups[groupName].forEach(obj => {
-            const objectCheckbox = document.getElementById(`object${zoneId}-${groupName}-${obj.id}`);
-            objectCheckbox.checked = zoneCheckbox.checked;
-            if (zoneCheckbox.checked) {
-                myMap.geoObjects.add(obj.placemark);
-            } else {
-                myMap.geoObjects.remove(obj.placemark);
-            }
-        });
+        const groupCheckbox = document.getElementById(`group${sanitizeId(zoneName)}-${sanitizeId(groupName)}`);
+        if (groupCheckbox) {
+            groupCheckbox.checked = zoneCheckbox.checked;
+            toggleGroup(zoneName, groupName);
+        }
     }
 }
 
-function toggleGroup(zoneId, groupName) {
-    const zone = zones[zoneId];
-    const groupCheckbox = document.getElementById(`group${zoneId}-${groupName}`);
+function swapCoordinates(coords) {
+    return coords.map(coord => {
+        if (Array.isArray(coord[0])) {
+            return swapCoordinates(coord);
+        } else {
+            // Меняем местами долготу и широту
+            return [coord[1], coord[0]];
+        }
+    });
+}
+
+
+
+function toggleGroup(zoneName, groupName) {
+    const zone = zones[zoneName];
+    const groupCheckbox = document.getElementById(`group${sanitizeId(zoneName)}-${sanitizeId(groupName)}`);
 
     zone.groups[groupName].forEach(obj => {
-        const objectCheckbox = document.getElementById(`object${zoneId}-${groupName}-${obj.id}`);
+        const objectCheckbox = document.getElementById(`object${sanitizeId(zoneName)}-${sanitizeId(groupName)}-${sanitizeId(obj.id)}`);
         if (groupCheckbox.checked) {
             objectCheckbox.checked = true;
             myMap.geoObjects.add(obj.placemark);
@@ -197,14 +187,14 @@ function toggleGroup(zoneId, groupName) {
     });
 }
 
-function toggleObject(zoneId, groupName, objectId) {
-    const zone = zones[zoneId];
+function toggleObject(zoneName, groupName, objectId) {
+    const zone = zones[zoneName];
     const object = zone.groups[groupName].find(obj => obj.id === objectId);
-    const objectCheckbox = document.getElementById(`object${zoneId}-${groupName}-${objectId}`);
+    const objectCheckbox = document.getElementById(`object${sanitizeId(zoneName)}-${sanitizeId(groupName)}-${sanitizeId(objectId)}`);
 
-    if (objectCheckbox.checked) {
+    if (objectCheckbox && objectCheckbox.checked) {
         myMap.geoObjects.add(object.placemark);
-    } else {
+    } else if (objectCheckbox) {
         myMap.geoObjects.remove(object.placemark);
     }
 }
@@ -285,42 +275,43 @@ style.appendChild(document.createTextNode(css));
 document.head.appendChild(style);
 
 // Определение функции generateZoneHTML
-function generateZoneHTML(zoneId, color) {
+function generateZoneHTML(zoneName, color) {
     const controls = document.getElementById('controls');
     const zoneDiv = document.createElement('div');
     zoneDiv.className = 'section';
-    zoneDiv.id = `zone-section-${zoneId}`;
+    zoneDiv.id = `zone-section-${sanitizeId(zoneName)}`;
     zoneDiv.innerHTML = `
         <label class="zone-label">
-            <input type="checkbox" id="zone${zoneId}">
-            <span class="zone-title">Зона ${zoneId}</span>
+            <input type="checkbox" id="zone${sanitizeId(zoneName)}">
+            <span class="zone-title">Зона ${zoneName}</span>
         </label>
     `;
     controls.appendChild(zoneDiv);
 }
 
 // Определение функции generateGroupHTML
-function generateGroupHTML(zoneId, groupName) {
-    const section = document.getElementById(`zone-section-${zoneId}`);
+function generateGroupHTML(zoneName, groupName) {
+    const section = document.getElementById(`zone-section-${sanitizeId(zoneName)}`);
     const groupDiv = document.createElement('div');
     groupDiv.className = 'subsection';
     groupDiv.innerHTML = `
         <label class="category-label">
-            <input type="checkbox" id="group${zoneId}-${groupName}">
+            <input type="checkbox" id="group${sanitizeId(zoneName)}-${sanitizeId(groupName)}">
             <span class="category-title">${groupName}</span>
         </label>
-        <div class="object-list" id="objects-${zoneId}-${groupName}">
+        <div class="object-list" id="objects-${sanitizeId(zoneName)}-${sanitizeId(groupName)}">
         </div>
     `;
     section.appendChild(groupDiv);
 }
 
 // Определение функции generateObjectHTML
-function generateObjectHTML(zoneId, groupName, objectId, title) {
-    const objectList = document.getElementById(`objects-${zoneId}-${groupName}`);
+
+function generateObjectHTML(zoneName, groupName, objectId, title) {
+    const objectList = document.getElementById(`objects-${sanitizeId(zoneName)}-${sanitizeId(groupName)}`);
     const objectLabel = document.createElement('label');
     objectLabel.innerHTML = `
-        <input type="checkbox" id="object${zoneId}-${groupName}-${objectId}"> ${title}
+        <input type="checkbox" id="object${sanitizeId(zoneName)}-${sanitizeId(groupName)}-${sanitizeId(objectId)}"> ${title}
     `;
     objectList.appendChild(objectLabel);
 }
