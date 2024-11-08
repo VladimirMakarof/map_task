@@ -40,35 +40,41 @@ function fetchZoneData(sheetName, zoneId, color) {
             // Добавляем обработчик на чекбокс зоны
             document.getElementById(`zone${zoneId}`).addEventListener('change', () => toggleZone(zoneId));
 
-            // Обрабатываем данные из таблицы, пропуская заголовок
-            for (let i = 1; i < rows.length; i++) {
-                const [id, group, title, lat, lon, link, imageUrl] = rows[i];
-                const latitude = parseFloat(lat);
-                const longitude = parseFloat(lon);
+for (let i = 1; i < rows.length; i++) {
+    const [id, group, title, lat, lon, link, imageUrl, iconPreset] = rows[i];
+    const latitude = parseFloat(lat);
+    const longitude = parseFloat(lon);
 
-                if (!zones[zoneId].groups[group]) {
-                    zones[zoneId].groups[group] = [];
-                    generateGroupHTML(zoneId, group);
-                }
+    if (!zones[zoneId].groups[group]) {
+        zones[zoneId].groups[group] = [];
+        generateGroupHTML(zoneId, group);
+    }
 
-                const placemark = new ymaps.Placemark(
-                    [latitude, longitude],
-                    {
-                        balloonContent: `
-<div>
-        <div class="balloon-title">${title}</div>
-        <a href="${link}" target="_blank" class="balloon-link">Подробнее</a><br>
-        <img src="${imageUrl}" alt="${title}" style="width:200px; cursor:pointer;" onclick="showPopup('${imageUrl}')">
-    </div>
-                        `
-                    },
-                    {
-                        preset: 'islands#blueDotIcon'
-                    }
-                );
-                zones[zoneId].groups[group].push({ id, placemark });
-                generateObjectHTML(zoneId, group, id, title);
-            }
+    // Обрабатываем iconPreset
+    const cleanIconPreset = iconPreset ? iconPreset.replace(/['"]/g, '').trim() : '';
+
+    // Добавляем отладочный вывод
+    console.log(`Обработка объекта ID: ${id}, iconPreset: "${cleanIconPreset}"`);
+
+    const placemark = new ymaps.Placemark(
+        [latitude, longitude],
+        {
+            balloonContent: `
+                <div>
+                    <div class="balloon-title">${title}</div>
+                    <a href="${link}" target="_blank" class="balloon-link">Подробнее</a><br>
+                    <img src="${imageUrl}" alt="${title}" style="width:200px; cursor:pointer;" onclick="showPopup('${imageUrl}')">
+                </div>
+            `
+        },
+        {
+            preset: cleanIconPreset || 'islands#blueDotIcon'  // Используем очищенный preset или значение по умолчанию
+        }
+    );
+    
+    zones[zoneId].groups[group].push({ id, placemark });
+    generateObjectHTML(zoneId, group, id, title);
+}
 
             // Добавляем обработчики на чекбоксы групп и объектов
             for (let group in zones[zoneId].groups) {
@@ -84,6 +90,7 @@ function fetchZoneData(sheetName, zoneId, color) {
         })
         .catch(error => console.error(`Ошибка при загрузке данных с листа ${sheetName}:`, error));
 }
+
 
 ymaps.ready(init);
 
