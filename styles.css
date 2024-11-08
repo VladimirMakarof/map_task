@@ -95,10 +95,12 @@ input[type="checkbox"] {
     bottom: 20px;
     left: 20px;
     z-index: 1000;
+    opacity: 0.5;
 }
 
 #toggle-button:hover {
     background-color: #005bb5;
+    opacity: 1;
 }
 
 .hidden {
