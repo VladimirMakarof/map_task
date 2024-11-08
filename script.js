@@ -40,41 +40,56 @@ function fetchZoneData(sheetName, zoneId, color) {
             // Добавляем обработчик на чекбокс зоны
             document.getElementById(`zone${zoneId}`).addEventListener('change', () => toggleZone(zoneId));
 
-for (let i = 1; i < rows.length; i++) {
-    const [id, group, title, lat, lon, link, imageUrl, iconPreset] = rows[i];
-    const latitude = parseFloat(lat);
-    const longitude = parseFloat(lon);
+            for (let i = 1; i < rows.length; i++) {
+                const [id, group, title, lat, lon, link, imageUrl, iconPreset] = rows[i];
+                const latitude = parseFloat(lat);
+                const longitude = parseFloat(lon);
 
-    if (!zones[zoneId].groups[group]) {
-        zones[zoneId].groups[group] = [];
-        generateGroupHTML(zoneId, group);
-    }
+                if (!zones[zoneId].groups[group]) {
+                    zones[zoneId].groups[group] = [];
+                    generateGroupHTML(zoneId, group);
+                }
 
-    // Обрабатываем iconPreset
-    const cleanIconPreset = iconPreset ? iconPreset.replace(/['"]/g, '').trim() : '';
+                // Обрабатываем iconPreset
+                const cleanIconPreset = iconPreset ? iconPreset.replace(/['"]/g, '').trim() : '';
 
-    // Добавляем отладочный вывод
-    console.log(`Обработка объекта ID: ${id}, iconPreset: "${cleanIconPreset}"`);
+                // Добавляем отладочный вывод
+                console.log(`Обработка объекта ID: ${id}, iconPreset: "${cleanIconPreset}"`);
 
-    const placemark = new ymaps.Placemark(
-        [latitude, longitude],
-        {
-            balloonContent: `
-                <div>
-                    <div class="balloon-title">${title}</div>
-                    <a href="${link}" target="_blank" class="balloon-link">Подробнее</a><br>
-                    <img src="${imageUrl}" alt="${title}" style="width:200px; cursor:pointer;" onclick="showPopup('${imageUrl}')">
-                </div>
-            `
-        },
-        {
-            preset: cleanIconPreset || 'islands#blueDotIcon'  // Используем очищенный preset или значение по умолчанию
-        }
-    );
-    
-    zones[zoneId].groups[group].push({ id, placemark });
-    generateObjectHTML(zoneId, group, id, title);
-}
+                const placemark = new ymaps.Placemark(
+                    [latitude, longitude],
+                    {
+                        balloonContent: `
+                            <div>
+                                <div class="balloon-title">${title}</div>
+                                <a href="${link}" target="_blank" class="balloon-link">Подробнее</a><br>
+                                <img src="${imageUrl}" alt="${title}" class="balloon-image" style="width:200px; cursor:pointer;">
+                            </div>
+                        `
+                    },
+                    {
+                        preset: cleanIconPreset || 'islands#blueDotIcon'
+                    }
+                );
+
+                // Добавляем обработчик события 'balloonopen'
+                placemark.events.add('balloonopen', function (e) {
+                    const target = e.get('target');
+                    target.balloon.getOverlay().then(function(overlay) {
+                        const balloonContent = overlay.getElement();
+                        const imgElement = balloonContent.querySelector('.balloon-image');
+
+                        if (imgElement) {
+                            imgElement.addEventListener('click', function () {
+                                showPopup(imageUrl);
+                            });
+                        }
+                    });
+                });
+
+                zones[zoneId].groups[group].push({ id, placemark });
+                generateObjectHTML(zoneId, group, id, title);
+            }
 
             // Добавляем обработчики на чекбоксы групп и объектов
             for (let group in zones[zoneId].groups) {
@@ -90,7 +105,6 @@ for (let i = 1; i < rows.length; i++) {
         })
         .catch(error => console.error(`Ошибка при загрузке данных с листа ${sheetName}:`, error));
 }
-
 
 ymaps.ready(init);
 
@@ -167,8 +181,6 @@ function toggleZone(zoneId) {
     }
 }
 
-
-
 function toggleGroup(zoneId, groupName) {
     const zone = zones[zoneId];
     const groupCheckbox = document.getElementById(`group${zoneId}-${groupName}`);
@@ -206,10 +218,13 @@ function showPopup(imageUrl) {
     // Контейнер для изображения и крестика
     popupOverlay.innerHTML = `
         <div class="popup-content">
-            <span class="popup-close" onclick="closePopup()">×</span>
+            <span class="popup-close">×</span>
             <img src="${imageUrl}" alt="Image" class="popup-image">
         </div>
     `;
+
+    // Добавляем обработчик клика по крестику
+    popupOverlay.querySelector('.popup-close').addEventListener('click', closePopup);
 
     // Добавляем обработчик клика по overlay для закрытия popup
     popupOverlay.addEventListener('click', (event) => {
@@ -229,34 +244,40 @@ function closePopup() {
     }
 }
 
-
-
-// Дополнительный HTML для popup
-document.body.insertAdjacentHTML('beforeend', `
-    <div id="image-popup" class="popup" onclick="closePopup()">
-        <img id="popup-image" src="" alt="Просмотр изображения">
-    </div>
-`);
-
 // CSS для popup
 const css = `
-    .popup {
-        display: none;
+    .popup-overlay {
         position: fixed;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0, 0, 0, 0.8);
+        background-color: rgba(0,0,0,0.8);
+        display: flex;
         justify-content: center;
         align-items: center;
-        z-index: 1000;
+        z-index: 10000;
     }
 
-    .popup img {
+    .popup-content {
+        position: relative;
+    }
+
+    .popup-image {
         max-width: 90%;
         max-height: 90%;
         border-radius: 8px;
+    }
+
+    .popup-close {
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        background-color: #fff;
+        border-radius: 50%;
+        padding: 5px 10px;
+        cursor: pointer;
+        font-size: 24px;
     }
 `;
 const style = document.createElement('style');
