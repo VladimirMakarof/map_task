@@ -169,3 +169,22 @@ input[type="checkbox"] {
     color: #333;
     cursor: pointer;
 }
+
+.balloon-title {
+    font-size: 20px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.balloon-link, .date-link a {
+    font-size: 16px;
+    color: #1a73e8;
+    text-decoration: none;
+    transition: color 0.3s ease, text-decoration 0.3s ease;
+}
+
+.balloon-link:hover, .date-link a:hover {
+    color: #005bb5;
+    text-decoration: underline;
+}
