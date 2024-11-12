@@ -20,7 +20,7 @@
 <button id="toggle-button">Скрыть настройки</button>
 <button id="form-button" class="form-button">Форма</button>
 
-<!-- HTML -->
+<!-- Модальное окно для формы -->
 <div id="form-popup" class="form-popup hidden">
     <div class="form-popup-content">
         <span class="popup-close" onclick="closeFormPopup()">&times;</span>
@@ -28,26 +28,8 @@
     </div>
 </div>
 
-<!-- Скрипт для инициализации формы -->
-<script type="text/javascript">
-(function() {
-    var f = 'externalFormStarterCallback', s = document.createElement('script');
-    window[f] = function(h) {
-        if (document.getElementById('formHolder')) {
-            console.log('Форма инициализируется');
-            h.bind(document.getElementById('formHolder'));
-        } else {
-            console.error('formHolder не найден');
-        }
-    };
-    s.type = 'text/javascript';
-    s.async = true;
-    s.src = 'https://pyrus.com/js/externalformstarter?jsonp=' + f + '&id=1524907';
-    document.head.appendChild(s);
-})();
 
 
-</script>
 
 
 
