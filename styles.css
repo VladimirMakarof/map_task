@@ -82,7 +82,13 @@ input[type="checkbox"] {
 #map {
     flex-grow: 1;
     height: 100%;
+    transition: width 0.3s ease;
 }
+
+.expanded-map {
+    width: 100%;
+}
+
 
 #toggle-button {
     padding: 8px 12px;
@@ -188,3 +194,91 @@ input[type="checkbox"] {
     color: #005bb5;
     text-decoration: underline;
 }
+
+.accordion-header {
+    cursor: pointer;
+    font-weight: bold;
+    padding: 10px;
+    background-color: #f0f0f0;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    align-items: center;
+}
+
+.accordion-content.hidden {
+    display: none;
+}
+
+.section .subsection {
+    padding-left: 15px;
+}
+
+.accordion-header input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+
+
+ /* Стили для кнопок */
+
+     #toggle-button, #form-button {
+        padding: 8px 12px;
+        background-color: #0078FF;
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        z-index: 1000;
+        margin-right: 10px;
+    }
+#form-button {
+
+        bottom: 60px;
+
+    }
+
+    #toggle-button:hover, #form-button:hover {
+        background-color: #005bb5;
+    }
+
+    /* Стили для модального окна */
+    .form-popup {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+
+    .form-popup.hidden {
+        display: none;
+    }
+
+    .form-popup-content {
+        position: relative;
+        background: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        max-width: 90%;
+        max-height: 90%;
+    }
+
+    .popup-close {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        font-size: 24px;
+        font-weight: bold;
+        color: #333;
+        cursor: pointer;
+    }
+
+
