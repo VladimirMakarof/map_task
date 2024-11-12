@@ -10,9 +10,31 @@ function sanitizeId(name) {
     return name.replace(/\s+/g, '_').replace(/[^\p{L}\d\-_]/gu, '');
 }
 
-function fetchZoneData(sheetName, zoneName, color) {
+// Функция для получения списка листов
+function fetchSheetNames() {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?key=${apiKey}`;
+    return fetch(url)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Ошибка при загрузке списка листов: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            const sheets = data.sheets;
+            if (!sheets) throw new Error('Не удалось получить список листов');
+            return sheets.map(sheet => sheet.properties.title);
+        })
+        .catch(error => {
+            console.error('Ошибка при получении списка листов:', error);
+            return [];
+        });
+}
+
+// Функция для получения данных с конкретного листа
+function fetchZoneData(sheetName, color) {
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}?key=${apiKey}`;
-    fetch(url)
+    return fetch(url)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`Ошибка при загрузке данных с листа ${sheetName}: ${response.statusText}`);
@@ -23,6 +45,7 @@ function fetchZoneData(sheetName, zoneName, color) {
             const rows = data.values;
             if (!rows) throw new Error(`Данные с листа ${sheetName} пусты или недоступны`);
 
+            const zoneName = sheetName;
             if (!zones[zoneName]) zones[zoneName] = { polygon: null, groups: {}, isVisible: false };
             generateZoneHTML(zoneName, color);
 
@@ -94,10 +117,16 @@ ymaps.ready(init);
 function init() {
     myMap = new ymaps.Map("map", { center: initialCenter, zoom: initialZoom });
 
-    fetchZoneData('46-ой Округ', '46-ой Округ', '#FFA50088');
-    fetchZoneData('47-й Округ', '47-й Округ', '#4682B488');
-    fetchZoneData('48-й ОКруг', '48-й ОКруг', '#1E90FF');
-    fetchZoneData('45-й Округ', '45-й Округ', '#32CD32');
+    // Получаем список листов и для каждого загружаем данные
+    fetchSheetNames().then(sheetNames => {
+        const colors = [
+  '#FFA50088', '#4682B488', '#1E90FF', '#32CD32', '#FF6347', '#8A2BE2', '#FFD700',  '#FF69B4',  '#00FA9A', '#DA70D6',  '#40E0D0',  '#FF4500',  '#7B68EE', '#6A5ACD',  '#20B2AA',  '#9370DB'   
+];
+        sheetNames.forEach((sheetName, index) => {
+            const color = colors[index % colors.length]; // Выбираем цвет из массива
+            fetchZoneData(sheetName, color);
+        });
+    });
 
     const controls = document.getElementById('controls');
     const toggleButton = document.getElementById('toggle-button');
