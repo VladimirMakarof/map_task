@@ -256,11 +256,32 @@ function generateObjectHTML(zoneName, groupName, objectId, title) {
 document.addEventListener("DOMContentLoaded", function() {
     const formButton = document.getElementById('form-button');
     const formPopup = document.getElementById('form-popup');
-    const formPopupContent = document.querySelector('.form-popup-content');
+    const formHolder = document.getElementById('formHolder');
 
     if (formButton) {
         formButton.addEventListener('click', function() {
             formPopup.classList.remove('hidden');
+
+            // Инициализируем форму при первом открытии
+            if (!window.formInitialized) {
+                window.formInitialized = true; // Устанавливаем флаг, чтобы предотвратить повторную инициализацию
+
+                (function() {
+                    var f = 'externalFormStarterCallback', s = document.createElement('script');
+                    window[f] = function(h) {
+                        if (formHolder) {
+                            console.log('Форма инициализируется');
+                            h.bind(formHolder);
+                        } else {
+                            console.error('formHolder не найден');
+                        }
+                    };
+                    s.type = 'text/javascript';
+                    s.async = true;
+                    s.src = 'https://pyrus.com/js/externalformstarter?jsonp=' + f + '&id=1524907';
+                    document.head.appendChild(s);
+                })();
+            }
         });
     }
 
@@ -271,10 +292,11 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // Закрытие модального окна при клике вне формы
     formPopup.addEventListener('click', function(event) {
-        if (event.target === formPopup) { // Проверяем, что клик был именно на фон, а не на контент формы
+        if (event.target === formPopup) {
             closeFormPopup();
         }
     });
 });
+
 
 
