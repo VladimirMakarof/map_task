@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Карта с Участками и Объектами</title>
     <link rel="stylesheet" href="styles.css">
-     <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
     <script src="https://api-maps.yandex.ru/2.1/?apikey=0466250c-97ea-4e27-8c2c-cef3a58398a4&lang=ru_RU" type="text/javascript"></script>
     <script src="script.js" defer></script>
 </head>
@@ -14,8 +14,42 @@
             <h1>Настройки карты</h1>
            
         </div>
-        <button id="toggle-button">Скрыть настройки</button>
+ 
+
+<!-- Кнопка для открытия формы, добавленная рядом с кнопкой скрытия настроек -->
+<button id="toggle-button">Скрыть настройки</button>
+<button id="form-button" class="form-button">Форма</button>
+
+<!-- Модальное окно для формы -->
+<div id="form-popup" class="form-popup hidden">
+    <div class="form-popup-content">
+        <span class="popup-close" onclick="closeFormPopup()">&times;</span>
+        <div id="formHolder" data-width="720px"></div>
+    </div>
+</div>
+
+<!-- Скрипт для инициализации формы -->
+<script type="text/javascript">
+    (function(){
+        var f = 'externalFormStarterCallback', s = document.createElement('script');
+        window[f] = function(h) { h.bind(document.getElementById('formHolder')) };
+        s.type = 'text/javascript'; s.async = 1;
+        s.src = 'https://pyrus.com/js/externalformstarter?jsonp=' + f + '&id=1524907';
+        document.head.appendChild(s);
+    })();
+</script>
+
+
+
+
+
+
+
         <div id="map"></div>
     </div>
 </body>
 </html>
+
+
+
+
