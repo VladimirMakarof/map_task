@@ -299,3 +299,44 @@ input[type="checkbox"] {
     height: 100%;
     border: none;
 }
+
+
+
+.zone-button {
+    padding: 8px 12px;
+    font-size: 14px;
+    background-color: #0078FF;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    position: fixed;
+    bottom: 100px; 
+    right: 20px; 
+    z-index: 1000;
+    width: 170px;
+    text-align: center;
+}
+
+.zone-button:hover {
+    background-color: #005bb5;
+}
+
+#zone-select{
+    left: 20px;
+}
+
+#zone-select option {
+    color: #333;
+}
+
+.zone-button select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background: #0078FF;
+    color: white;
+    padding: 8px;
+    border: none;
+    border-radius: 5px;
+}
