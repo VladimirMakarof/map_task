@@ -150,15 +150,25 @@ function setupAccordion(zoneName) {
     zoneHeader.addEventListener('click', () => {
         const isExpanded = !zoneContent.classList.toggle('hidden');
         if (isExpanded) {
-            showZone(zoneName);
+            showZonePolygonOnly(zoneName);
             myMap.setCenter(initialCenter, initialZoom); // Центрируем карту на начальные координаты
-            setAllCheckboxes(zoneName, true); // Устанавливаем все чекбоксы в checked
         } else {
             hideZone(zoneName);
-            setAllCheckboxes(zoneName, false); // Устанавливаем все чекбоксы в unchecked
         }
     });
 }
+
+function showZonePolygonOnly(zoneName) {
+    const zone = zones[zoneName];
+    if (!zone || zone.isVisible) return;
+
+    if (zone.polygon) {
+        myMap.geoObjects.add(zone.polygon);
+    }
+    zone.isVisible = true;
+}
+
+
 
 function showZone(zoneName) {
     const zone = zones[zoneName];
@@ -178,7 +188,9 @@ function hideZone(zoneName) {
     const zone = zones[zoneName];
     if (!zone || !zone.isVisible) return;
 
-    myMap.geoObjects.remove(zone.polygon);
+    if (zone.polygon) {
+        myMap.geoObjects.remove(zone.polygon);
+    }
     zone.isVisible = false;
 
     for (let groupName in zone.groups) {
@@ -187,6 +199,7 @@ function hideZone(zoneName) {
         });
     }
 }
+
 
 function setAllCheckboxes(zoneName, isChecked) {
     const zone = zones[zoneName];
@@ -260,15 +273,23 @@ function generateGroupHTML(zoneName, groupName) {
     const groupDiv = document.createElement('div');
     groupDiv.className = 'subsection';
     groupDiv.innerHTML = `
-        <label class="category-label">
-            <input type="checkbox" id="group${sanitizeId(zoneName)}-${sanitizeId(groupName)}" checked onchange="toggleGroup('${zoneName}', '${groupName}', this.checked)">
-            <span class="category-title">${groupName}</span>
-        </label>
-        <div class="object-list" id="objects-${sanitizeId(zoneName)}-${sanitizeId(groupName)}">
+        <button class="category-title accordion-header" id="group${sanitizeId(zoneName)}-${sanitizeId(groupName)}">
+            ${groupName}
+        </button>
+        <div class="object-list hidden" id="objects-${sanitizeId(zoneName)}-${sanitizeId(groupName)}">
         </div>
     `;
     section.appendChild(groupDiv);
+
+    // Добавляем обработчик события для кнопки
+    const groupHeader = document.getElementById(`group${sanitizeId(zoneName)}-${sanitizeId(groupName)}`);
+    groupHeader.addEventListener('click', () => {
+        const objectList = document.getElementById(`objects-${sanitizeId(zoneName)}-${sanitizeId(groupName)}`);
+        const isExpanded = !objectList.classList.toggle('hidden');
+        toggleGroup(zoneName, groupName, isExpanded);
+    });
 }
+
 
 function generateObjectHTML(zoneName, groupName, objectId, title) {
     const objectList = document.getElementById(`objects-${sanitizeId(zoneName)}-${sanitizeId(groupName)}`);
