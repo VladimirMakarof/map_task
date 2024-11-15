@@ -3,37 +3,56 @@ const spreadsheetId = '13aWpgiOD_uZodKXpxLzkLAgidljTH8UZX3F78czGfwQ';
 
 
 let myMap;
-let zones = {}; // Хранит зоны, группы, подгруппы и объекты
-const initialCenter = [60.007899, 30.390313]; // Начальный центр карты
-const initialZoom = 14; // Начальный масштаб карты
+let zones = {}; 
+const initialCenter = [60.007899, 30.390313]; 
+const initialZoom = 14; 
+const zoneMappings = {
+    "Зона 1": "Ремонт и реконструкция",
+    "Зона 2": "Озеленение",
+    "Зона 3": "Социальная инфрастуктура",
+    "Зона 4": "Благоустройство" 
+};
 
 function sanitizeId(name) {
     return name ? name.replace(/\s+/g, '_').replace(/[^\p{L}\d\-_]/gu, '') : '';
 }
 
-// Функция для получения списка листов
+
 function fetchSheetNames() {
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?key=${apiKey}`;
     return fetch(url)
         .then(response => {
             if (!response.ok) {
-                throw new Error(`Ошибка при загрузке списка листов: ${response.statusText}`);
+                throw new Error(`Error fetching sheet list: ${response.statusText}`);
             }
             return response.json();
         })
         .then(data => {
             const sheets = data.sheets;
-            if (!sheets) throw new Error('Не удалось получить список листов');
+            if (!sheets) throw new Error('Failed to get sheet list');
             return sheets.map(sheet => sheet.properties.title);
         })
         .catch(error => {
-            console.error('Ошибка при получении списка листов:', error);
+            console.error('Error fetching sheet list:', error);
             return [];
         });
 }
 
-// Функция для получения данных с конкретного листа
-function fetchZoneData(sheetName, color) {
+function flattenCoords(coords) {
+    let flatCoords = [];
+    coords.forEach(function(coord) {
+        if (Array.isArray(coord[0])) {
+            flatCoords = flatCoords.concat(flattenCoords(coord));
+        } else {
+            flatCoords.push(coord);
+        }
+    });
+    return flatCoords;
+}
+
+
+
+function fetchZoneData(zoneKey, sheetName, color) {
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}?key=${apiKey}`;
     return fetch(url)
         .then(response => {
@@ -48,13 +67,23 @@ function fetchZoneData(sheetName, color) {
                 throw new Error(`Данные с листа ${sheetName} пусты или недоступны`);
             }
 
-            const zoneName = sheetName;
-            if (!zones[zoneName]) {
-                zones[zoneName] = { polygon: null, groups: {}, isVisible: false };
+            const zoneName = zoneKey; // Настоящее название зоны
+            const zoneDisplayName = sheetName;  // Это название листа из Google Таблицы
+
+            if (!zones[zoneKey]) {
+                zones[zoneKey] = { 
+                    polygon: null, 
+                    label: null,
+                    groups: {}, 
+                    isVisible: false, 
+                    polygonVisible: false,
+                    zoneName: zoneName, // Сохраняем "Зона 1"
+                    zoneDisplayName: zoneDisplayName // Сохраняем "Ремонт и реконструкция"
+                };
             }
 
-            // Генерация HTML для зоны
-            generateZoneHTML(zoneName, color);
+            // Генерация HTML для зоны с использованием zoneKey и zoneName
+            generateZoneHTML(zoneKey, zoneDisplayName, color);
 
             // Парсинг координат полигона (столбец с индексом 9)
             const polygonCoordsString = rows[1][9];
@@ -63,11 +92,30 @@ function fetchZoneData(sheetName, color) {
                 try {
                     coordinates = JSON.parse(polygonCoordsString);
                     coordinates = swapCoordinates(coordinates);
-                    zones[zoneName].polygon = new ymaps.Polygon(coordinates, {}, {
+
+                    // Создаем полигон
+                    zones[zoneKey].polygon = new ymaps.Polygon(coordinates, {}, {
                         fillColor: color,
                         strokeColor: '#333',
                         opacity: 0.4,
                     });
+
+                    // Вычисляем центр полигона из координат
+const flatCoords = flattenCoords(coordinates);
+const bounds = ymaps.util.bounds.fromPoints(flatCoords);
+const center = ymaps.util.bounds.getCenter(bounds);
+
+
+                    // Создаем метку с названием зоны
+zones[zoneKey].label = new ymaps.Placemark(center, {
+    iconCaption: zoneName, // Это "Зона 1"
+}, {
+    preset: 'islands#blueCircleDotIconWithCaption',
+    iconCaptionMaxWidth: '200',
+    iconColor: color,
+});
+
+
                 } catch (e) {
                     console.error(`Ошибка при парсинге координат полигона для зоны ${zoneName}:`, e);
                 }
@@ -84,23 +132,23 @@ function fetchZoneData(sheetName, color) {
                 const latitude = parseFloat(lat);
                 const longitude = parseFloat(lon);
 
-                if (!zones[zoneName].groups[group]) {
-                    zones[zoneName].groups[group] = { subgroups: {}, objects: [] };
-                    generateGroupHTML(zoneName, group);
+                if (!zones[zoneKey].groups[group]) {
+                    zones[zoneKey].groups[group] = { subgroups: {}, objects: [] };
+                    generateGroupHTML(zoneKey, group);
                 }
 
                 let targetArray;
                 if (subgroup) {
-                    if (!zones[zoneName].groups[group].subgroups[subgroup]) {
-                        zones[zoneName].groups[group].subgroups[subgroup] = [];
-                        generateSubgroupHTML(zoneName, group, subgroup);
+                    if (!zones[zoneKey].groups[group].subgroups[subgroup]) {
+                        zones[zoneKey].groups[group].subgroups[subgroup] = [];
+                        generateSubgroupHTML(zoneKey, group, subgroup);
                     }
-                    targetArray = zones[zoneName].groups[group].subgroups[subgroup];
+                    targetArray = zones[zoneKey].groups[group].subgroups[subgroup];
                 } else {
-                    targetArray = zones[zoneName].groups[group].objects;
+                    targetArray = zones[zoneKey].groups[group].objects;
                 }
 
-                generateObjectHTML(zoneName, group, subgroup, id, title);
+                generateObjectHTML(zoneKey, group, subgroup, id, title);
 
                 const cleanIconPreset = (iconPreset || 'islands#blueDotIcon').replace(/['"]/g, '').trim();
 
@@ -130,68 +178,148 @@ function fetchZoneData(sheetName, color) {
             }
 
             // Установка обработчиков для аккордеона
-            setupAccordion(zoneName);
+            setupAccordion(zoneKey);
         })
         .catch(error => console.error(`Ошибка при загрузке данных с листа ${sheetName}:`, error));
 }
 
+
+
+
 ymaps.ready(init);
+
 
 function init() {
     myMap = new ymaps.Map("map", { center: initialCenter, zoom: initialZoom });
 
-    // Получаем список листов и для каждого загружаем данные
-    fetchSheetNames().then(sheetNames => {
-        const colors = [
-            '#FFA50088', '#4682B488', '#1E90FF', '#32CD32', '#FF6347', '#8A2BE2', '#FFD700',
-            '#FF69B4', '#00FA9A', '#DA70D6', '#40E0D0', '#FF4500', '#7B68EE', '#6A5ACD', '#20B2AA', '#9370DB'
-        ];
-        sheetNames.forEach((sheetName, index) => {
-            const color = colors[index % colors.length];
-            fetchZoneData(sheetName, color);
-        });
+    const colors = [
+        '#FFA50088', '#4682B488', '#1E90FF', '#32CD32'
+    ];
+
+    let zoneKeys = Object.keys(zoneMappings); // ["Зона 1", "Зона 2", "Зона 3", "Зона 4"]
+
+    let loadPromises = zoneKeys.map((zoneKey, index) => {
+        const sheetName = zoneMappings[zoneKey];
+        const color = colors[index % colors.length];
+        return fetchZoneData(zoneKey, sheetName, color);
+    });
+
+    // После загрузки всех зон
+    Promise.all(loadPromises).then(() => {
+        // Выпадающий список уже содержит фиксированные значения
+    });
+
+    // Обработчик для выпадающего списка
+    const zoneSelect = document.getElementById('zone-select');
+    zoneSelect.addEventListener('change', function () {
+        const selectedZone = this.value;
+
+        // Скрываем все полигоны
+        for (let zoneKey in zones) {
+            hideZonePolygon(zoneKey);
+        }
+
+        if (selectedZone === 'all') {
+            // Отображаем все полигоны
+            for (let zoneKey in zones) {
+                showZonePolygon(zoneKey);
+            }
+        } else if (zones[selectedZone]) {
+            // Отображаем выбранный полигон
+            showZonePolygon(selectedZone);
+        }
     });
 }
 
-function generateZoneHTML(zoneName, color) {
+function populateZoneDropdown() {
+    const zoneSelect = document.getElementById('zone-select');
+    zoneSelect.innerHTML = ''; // Очищаем текущие опции
+
+    // Добавляем опции по умолчанию
+    zoneSelect.innerHTML = `
+        <option value="">Выберите зону:</option>
+        <option value="all">Все</option>
+    `;
+
+    // Используем ключи из zoneMappings для заполнения списка
+    for (let zoneKey in zoneMappings) {
+        const option = document.createElement('option');
+        option.value = zoneKey;
+        option.textContent = zoneKey;
+        zoneSelect.appendChild(option);
+    }
+}
+
+
+
+function generateZoneHTML(zoneKey, zoneDisplayName, color) {
     const controls = document.getElementById('controls');
     const zoneDiv = document.createElement('div');
     zoneDiv.className = 'section';
-    zoneDiv.id = `zone-section-${sanitizeId(zoneName)}`;
+    zoneDiv.id = `zone-section-${sanitizeId(zoneKey)}`;
     zoneDiv.innerHTML = `
-        <div class="accordion-header" id="zone-header-${sanitizeId(zoneName)}">
-            <span class="zone-title">${zoneName}</span>
+        <div class="accordion-header" id="zone-header-${sanitizeId(zoneKey)}">
+            <span class="zone-title">${zoneDisplayName}</span>
         </div>
-        <div class="accordion-content hidden" id="zone-content-${sanitizeId(zoneName)}">
+        <div class="accordion-content hidden" id="zone-content-${sanitizeId(zoneKey)}">
         </div>
     `;
     controls.appendChild(zoneDiv);
 }
 
-function generateGroupHTML(zoneName, groupName) {
-    const section = document.getElementById(`zone-content-${sanitizeId(zoneName)}`);
+
+
+function generateGroupHTML(zoneKey, groupName) {
+    const section = document.getElementById(`zone-content-${sanitizeId(zoneKey)}`);
     if (!section) {
-        console.error(`Не удалось найти секцию зоны: zone-content-${sanitizeId(zoneName)}`);
+        console.error(`Не удалось найти секцию зоны: zone-content-${sanitizeId(zoneKey)}`);
         return;
     }
     const groupDiv = document.createElement('div');
     groupDiv.className = 'subsection';
     groupDiv.innerHTML = `
-        <div class="accordion-header" id="group-header-${sanitizeId(zoneName)}-${sanitizeId(groupName)}">
+        <div class="accordion-header" id="group-header-${sanitizeId(zoneKey)}-${sanitizeId(groupName)}">
             <span class="category-title">${groupName}</span>
         </div>
-        <div class="accordion-content hidden" id="group-content-${sanitizeId(zoneName)}-${sanitizeId(groupName)}">
+        <div class="accordion-content hidden" id="group-content-${sanitizeId(zoneKey)}-${sanitizeId(groupName)}">
         </div>
     `;
     section.appendChild(groupDiv);
 
     // Установка обработчика для аккордеона группы
-    const groupHeader = document.getElementById(`group-header-${sanitizeId(zoneName)}-${sanitizeId(groupName)}`);
-    const groupContent = document.getElementById(`group-content-${sanitizeId(zoneName)}-${sanitizeId(groupName)}`);
+    const groupHeader = document.getElementById(`group-header-${sanitizeId(zoneKey)}-${sanitizeId(groupName)}`);
+    const groupContent = document.getElementById(`group-content-${sanitizeId(zoneKey)}-${sanitizeId(groupName)}`);
     groupHeader.addEventListener('click', () => {
         groupContent.classList.toggle('hidden');
+        const isExpanded = !groupContent.classList.contains('hidden');
+        toggleGroupObjects(zoneKey, groupName, isExpanded);
     });
 }
+
+
+function toggleGroupObjects(zoneName, groupName, show) {
+    const zone = zones[zoneName];
+    if (!zone || !zone.groups[groupName]) return;
+    const group = zone.groups[groupName];
+
+    // Отображаем или скрываем объекты без подгруппы
+    group.objects.forEach(obj => {
+        if (show) {
+            myMap.geoObjects.add(obj.placemark);
+        } else {
+            myMap.geoObjects.remove(obj.placemark);
+        }
+    });
+
+    // Отображаем или скрываем объекты подгрупп (если подгруппы развернуты)
+    for (let subgroupName in group.subgroups) {
+        const subgroupContent = document.getElementById(`objects-${sanitizeId(zoneName)}-${sanitizeId(groupName)}-${sanitizeId(subgroupName)}`);
+        const isSubgroupExpanded = subgroupContent && !subgroupContent.classList.contains('hidden');
+        toggleSubgroupObjects(zoneName, groupName, subgroupName, show && isSubgroupExpanded);
+    }
+}
+
+
 
 function generateSubgroupHTML(zoneName, groupName, subgroupName) {
     const groupSection = document.getElementById(`group-content-${sanitizeId(zoneName)}-${sanitizeId(groupName)}`);
@@ -215,6 +343,8 @@ function generateSubgroupHTML(zoneName, groupName, subgroupName) {
     const subgroupContent = document.getElementById(`objects-${sanitizeId(zoneName)}-${sanitizeId(groupName)}-${sanitizeId(subgroupName)}`);
     subgroupHeader.addEventListener('click', () => {
         subgroupContent.classList.toggle('hidden');
+        const isExpanded = !subgroupContent.classList.contains('hidden');
+        toggleSubgroupObjects(zoneName, groupName, subgroupName, isExpanded);
     });
 }
 
@@ -236,6 +366,7 @@ function generateObjectHTML(zoneName, groupName, subgroupName, objectId, title) 
     `;
     objectList.appendChild(objectLabel);
 }
+
 
 function toggleObject(zoneName, groupName, subgroupName, objectId, isChecked) {
     const zone = zones[zoneName];
@@ -262,19 +393,15 @@ function swapCoordinates(coords) {
     });
 }
 
-function setupAccordion(zoneName) {
-    const zoneHeader = document.getElementById(`zone-header-${sanitizeId(zoneName)}`);
-    const zoneContent = document.getElementById(`zone-content-${sanitizeId(zoneName)}`);
+function setupAccordion(zoneKey) {
+    const zoneHeader = document.getElementById(`zone-header-${sanitizeId(zoneKey)}`);
+    const zoneContent = document.getElementById(`zone-content-${sanitizeId(zoneKey)}`);
 
     zoneHeader.addEventListener('click', () => {
-        const isExpanded = !zoneContent.classList.toggle('hidden');
-        if (isExpanded) {
-            showZone(zoneName);
-        } else {
-            hideZone(zoneName);
-        }
+        zoneContent.classList.toggle('hidden');
     });
 }
+
 
 function showZone(zoneName) {
     const zone = zones[zoneName];
@@ -311,6 +438,67 @@ function hideZone(zoneName) {
         }
     }
 }
+
+function toggleSubgroupObjects(zoneName, groupName, subgroupName, show) {
+    const zone = zones[zoneName];
+    if (!zone || !zone.groups[groupName]) return;
+    const objectList = zone.groups[groupName].subgroups[subgroupName];
+    if (!objectList) return;
+
+    objectList.forEach(obj => {
+        if (show) {
+            myMap.geoObjects.add(obj.placemark);
+        } else {
+            myMap.geoObjects.remove(obj.placemark);
+        }
+    });
+}
+
+
+
+function showZonePolygon(zoneKey) {
+    const zone = zones[zoneKey];
+    if (!zone || zone.polygonVisible) return;
+
+    if (zone.polygon) {
+        myMap.geoObjects.add(zone.polygon);
+    }
+    if (zone.label) {
+        myMap.geoObjects.add(zone.label);
+    }
+    zone.polygonVisible = true;
+}
+
+
+
+function hideZonePolygon(zoneKey) {
+    const zone = zones[zoneKey];
+    if (!zone || !zone.polygonVisible) return;
+
+    if (zone.polygon) {
+        myMap.geoObjects.remove(zone.polygon);
+    }
+    if (zone.label) {
+        myMap.geoObjects.remove(zone.label);
+    }
+    zone.polygonVisible = false;
+}
+
+    const controls = document.getElementById('controls');
+    const toggleButton = document.getElementById('toggle-button');
+
+    toggleButton.addEventListener('click', () => {
+        if (controls.classList.contains('hidden')) {
+            controls.classList.remove('hidden');
+            toggleButton.textContent = 'Скрыть настройки';
+        } else {
+            controls.classList.add('hidden');
+            toggleButton.textContent = 'Показать настройки';
+        }
+        myMap.container.fitToViewport(); // Подстраиваем карту под изменения
+    });
+
+
 
 document.addEventListener("DOMContentLoaded", function() {
     const formButton = document.getElementById('form-button');
