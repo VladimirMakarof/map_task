@@ -17,44 +17,239 @@ function sanitizeId(name) {
     return name ? name.replace(/\s+/g, '_').replace(/[^\p{L}\d\-_]/gu, '') : '';
 }
 
-document.addEventListener("DOMContentLoaded", function () {
-    const locationButton = document.getElementById("get-location");
-    const locationDisplay = document.getElementById("location-display");
 
-    locationButton.addEventListener("click", function () {
-        // Проверяем поддержку Geolocation API
-        if (navigator.geolocation) {
-            locationDisplay.textContent = "Определяем местоположение...";
-            
-            navigator.geolocation.getCurrentPosition(
-                function (position) {
-                    const { latitude, longitude } = position.coords;
-                    locationDisplay.innerHTML = `Ваше местоположение:<br>
-                    Широта: ${latitude.toFixed(5)}<br>
-                    Долгота: ${longitude.toFixed(5)}`;
-                },
-                function (error) {
-                    switch (error.code) {
-                        case error.PERMISSION_DENIED:
-                            locationDisplay.innerHTML  = "Ошибка:<br> доступ к геолокации запрещен.";
-                            break;
-                        case error.POSITION_UNAVAILABLE:
-                            locationDisplay.innerHTML  = "Ошибка:<br> информация о местоположении недоступна.";
-                            break;
-                        case error.TIMEOUT:
-                            locationDisplay.innerHTML  = "Ошибка:<br> запрос на определение местоположения завершился по тайм-ауту.";
-                            break;
-                        default:
-                            locationDisplay.innerHTML  = "Ошибка:<br> невозможно определить местоположение.";
-                            break;
-                    }
-                }
-            );
-        } else {
-            locationDisplay.innerHTML  = "Geolocation API <br> не поддерживается вашим браузером.";
-        }
-    });
+const camera = document.getElementById('camera');
+const snapshot = document.getElementById('snapshot');
+const takePhotoButton = document.getElementById('take-photo');
+const savePhotoButton = document.getElementById('save-photo');
+const retakePhotoButton = document.getElementById('retake-photo');
+const closeModalButton = document.getElementById('close-modal');
+const photoStatus = document.getElementById('photo-status');
+const photoModal = document.getElementById('photo-modal');
+
+let photoBlob;
+let latitude = null;
+let longitude = null;
+
+// Открытие модального окна
+document.getElementById('open-photo-modal').addEventListener('click', () => {
+    const photoModal = document.getElementById('photo-modal');
+    const photoStatus = document.getElementById('photo-status');
+    const camera = document.getElementById('camera');
+
+    if (!photoModal || !photoStatus || !camera) {
+        console.error('Не удалось найти один из необходимых элементов (photo-modal, photo-status, camera).');
+        return;
+    }
+
+    // Показываем модальное окно и скрываем уведомление
+    photoModal.classList.remove('hidden');
+    photoStatus.classList.add('hidden');
+
+    console.log('Открываем модальное окно камеры.');
+
+    // Запрашиваем доступ к камере только при открытии модального окна
+    navigator.mediaDevices
+        .getUserMedia({ video: true })
+        .then((stream) => {
+            camera.srcObject = stream;
+            console.log('Камера успешно подключена.');
+        })
+        .catch((err) => {
+            console.error('Ошибка доступа к камере:', err);
+
+            // Выводим сообщение об ошибке и скрываем модальное окно
+            alert('Не удалось получить доступ к камере. Проверьте настройки браузера.');
+            photoModal.classList.add('hidden');
+        });
 });
+
+
+// Закрытие модального окна
+closeModalButton.addEventListener('click', () => {
+    closePhotoModal();
+});
+
+function closePhotoModal() {
+    photoModal.classList.add('hidden');
+    snapshot.style.display = 'none';
+    camera.style.display = 'block';
+    takePhotoButton.style.display = 'inline';
+    savePhotoButton.style.display = 'none';
+    retakePhotoButton.style.display = 'none';
+   // photoStatus.classList.add('hidden'); // Убираем сообщение о сохранении
+    if (camera.srcObject) {
+        // Останавливаем камеру
+        const tracks = camera.srcObject.getTracks();
+        tracks.forEach((track) => track.stop());
+        camera.srcObject = null;
+    }
+}
+
+// Съёмка фото
+takePhotoButton.addEventListener('click', () => {
+    console.log('Нажата кнопка съемки фото.');
+
+    // Проверяем и обновляем координаты перед съемкой
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                latitude = position.coords.latitude;
+                longitude = position.coords.longitude;
+                console.log(`Обновлены координаты: Широта=${latitude}, Долгота=${longitude}`);
+                capturePhoto();
+            },
+            (error) => {
+                console.warn('Не удалось получить координаты:', error);
+                alert('Не удалось получить координаты. Фото будет без геоданных.');
+                capturePhoto(); // Делаем фото даже без координат
+            }
+        );
+    } else {
+        alert('Геолокация не поддерживается вашим браузером. Фото будет без геоданных.');
+        capturePhoto();
+    }
+});
+
+function capturePhoto() {
+    if (camera.videoWidth && camera.videoHeight) {
+        const context = snapshot.getContext('2d');
+        snapshot.width = camera.videoWidth;
+        snapshot.height = camera.videoHeight;
+        context.drawImage(camera, 0, 0, snapshot.width, snapshot.height);
+
+        snapshot.style.display = 'block';
+        camera.style.display = 'none';
+        savePhotoButton.style.display = 'inline';
+        retakePhotoButton.style.display = 'inline';
+        takePhotoButton.style.display = 'none';
+
+        snapshot.toBlob(
+            (blob) => {
+                if (blob) {
+                    console.log('Фото успешно создано в формате Blob.');
+                    addGeoDataToPhoto(blob);
+                } else {
+                    console.error('Не удалось создать Blob из изображения.');
+                }
+            },
+            'image/jpeg',
+            0.9
+        );
+    } else {
+        console.error('Камера не готова. Пожалуйста, попробуйте снова.');
+        alert('Камера не готова. Пожалуйста, попробуйте снова.');
+    }
+}
+
+// Переснять фото
+retakePhotoButton.addEventListener('click', () => {
+    console.log('Нажата кнопка пересъема.');
+    snapshot.style.display = 'none';
+    camera.style.display = 'block';
+    takePhotoButton.style.display = 'inline';
+    savePhotoButton.style.display = 'none';
+    retakePhotoButton.style.display = 'none';
+    photoBlob = null; // Сбросить текущее фото
+});
+
+
+// Сохранение фото
+savePhotoButton.addEventListener('click', () => {
+    console.log('Нажата кнопка сохранения фото.');
+    if (photoBlob) {
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(photoBlob);
+        link.download = `photo_${Date.now()}.jpg`;
+        link.click();
+        console.log('Фото сохранено.');
+
+        // Убедимся, что скрытый класс удалён перед добавлением block
+        photoStatus.classList.remove('hidden');
+        photoStatus.classList.add('block');
+        console.log('Классы элемента photoStatus после отображения:', photoStatus.classList);
+
+        // Скрыть уведомление через 5 секунд
+        setTimeout(() => {
+            // Удаляем block и возвращаем hidden
+            photoStatus.classList.remove('block');
+            photoStatus.classList.add('hidden');
+            console.log('Классы элемента photoStatus после скрытия:', photoStatus.classList);
+        }, 5000);
+
+        // Закрытие модального окна
+        closePhotoModal();
+    } else {
+        console.error('Ошибка: фото не было сделано.');
+        alert('Фото не было сделано.');
+    }
+});
+
+
+
+
+
+
+
+
+
+// Добавление геоданных в EXIF
+function addGeoDataToPhoto(blob) {
+    console.log('Добавление геоданных в EXIF.');
+    console.log(`Координаты для добавления: Широта=${latitude}, Долгота=${longitude}`);
+
+    const reader = new FileReader();
+    reader.onload = function () {
+        try {
+            const jpegData = reader.result;
+            const exifObj = piexif.load(jpegData);
+
+            if (latitude !== null && longitude !== null) {
+                const gps = exifObj['GPS'] || {};
+                gps[piexif.GPSIFD.GPSLatitude] = piexif.GPSHelper.degToDmsRational(latitude);
+                gps[piexif.GPSIFD.GPSLatitudeRef] = latitude >= 0 ? 'N' : 'S';
+                gps[piexif.GPSIFD.GPSLongitude] = piexif.GPSHelper.degToDmsRational(longitude);
+                gps[piexif.GPSIFD.GPSLongitudeRef] = longitude >= 0 ? 'E' : 'W';
+
+                exifObj['GPS'] = gps;
+                const newExifData = piexif.dump(exifObj);
+                const newJpegData = piexif.insert(newExifData, jpegData);
+
+                // Преобразуем строку base64 обратно в Blob
+                const byteString = atob(newJpegData.split(',')[1]);
+                const arrayBuffer = new Uint8Array(byteString.length);
+                for (let i = 0; i < byteString.length; i++) {
+                    arrayBuffer[i] = byteString.charCodeAt(i);
+                }
+
+                photoBlob = new Blob([arrayBuffer], { type: 'image/jpeg' });
+                console.log('EXIF успешно обновлен.');
+            } else {
+                console.warn('Геоданные отсутствуют. Сохраняем фото без EXIF.');
+                photoBlob = blob;
+            }
+        } catch (error) {
+            console.error('Ошибка обработки EXIF данных:', error);
+            photoBlob = blob;
+        }
+    };
+
+    reader.onerror = function (error) {
+        console.error('Ошибка при чтении Blob:', error);
+        photoBlob = blob;
+    };
+
+    reader.readAsDataURL(blob);
+}
+
+
+
+
+
+
+
+
+
 
 
 
