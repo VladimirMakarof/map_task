@@ -17,6 +17,46 @@ function sanitizeId(name) {
     return name ? name.replace(/\s+/g, '_').replace(/[^\p{L}\d\-_]/gu, '') : '';
 }
 
+document.addEventListener("DOMContentLoaded", function () {
+    const locationButton = document.getElementById("get-location");
+    const locationDisplay = document.getElementById("location-display");
+
+    locationButton.addEventListener("click", function () {
+        // Проверяем поддержку Geolocation API
+        if (navigator.geolocation) {
+            locationDisplay.textContent = "Определяем местоположение...";
+            
+            navigator.geolocation.getCurrentPosition(
+                function (position) {
+                    const { latitude, longitude } = position.coords;
+                    locationDisplay.innerHTML = `Ваше местоположение:<br>
+                    Широта: ${latitude.toFixed(5)}<br>
+                    Долгота: ${longitude.toFixed(5)}`;
+                },
+                function (error) {
+                    switch (error.code) {
+                        case error.PERMISSION_DENIED:
+                            locationDisplay.textContent = "Ошибка: доступ к геолокации запрещен.";
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            locationDisplay.textContent = "Ошибка: информация о местоположении недоступна.";
+                            break;
+                        case error.TIMEOUT:
+                            locationDisplay.textContent = "Ошибка: запрос на определение местоположения завершился по тайм-ауту.";
+                            break;
+                        default:
+                            locationDisplay.textContent = "Ошибка: невозможно определить местоположение.";
+                            break;
+                    }
+                }
+            );
+        } else {
+            locationDisplay.textContent = "Geolocation API не поддерживается вашим браузером.";
+        }
+    });
+});
+
+
 
 function fetchSheetNames() {
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?key=${apiKey}`;
