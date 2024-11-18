@@ -36,22 +36,22 @@ document.addEventListener("DOMContentLoaded", function () {
                 function (error) {
                     switch (error.code) {
                         case error.PERMISSION_DENIED:
-                            locationDisplay.textContent = "Ошибка:<br> доступ к геолокации запрещен.";
+                            locationDisplay.innerHTML  = "Ошибка:<br> доступ к геолокации запрещен.";
                             break;
                         case error.POSITION_UNAVAILABLE:
-                            locationDisplay.textContent = "Ошибка:<br> информация о местоположении недоступна.";
+                            locationDisplay.innerHTML  = "Ошибка:<br> информация о местоположении недоступна.";
                             break;
                         case error.TIMEOUT:
-                            locationDisplay.textContent = "Ошибка:<br> запрос на определение местоположения завершился по тайм-ауту.";
+                            locationDisplay.innerHTML  = "Ошибка:<br> запрос на определение местоположения завершился по тайм-ауту.";
                             break;
                         default:
-                            locationDisplay.textContent = "Ошибка:<br> невозможно определить местоположение.";
+                            locationDisplay.innerHTML  = "Ошибка:<br> невозможно определить местоположение.";
                             break;
                     }
                 }
             );
         } else {
-            locationDisplay.textContent = "Geolocation API <br> не поддерживается вашим браузером.";
+            locationDisplay.innerHTML  = "Geolocation API <br> не поддерживается вашим браузером.";
         }
     });
 });
