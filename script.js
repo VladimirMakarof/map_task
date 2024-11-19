@@ -811,22 +811,28 @@ window.openImageModal = function(imageUrl) {
     }
 };
 
+const folderNameMapping = {
+    "сквер б-н между д. 6 и д. 10 по ул. Карпинского": "skver_b_n_mezhdu_d6_i_d10_po_ul_Karpinskogo"
+};
+
+
 
 function generateImageHTML(imageUrl, title) {
     if (imageUrl.startsWith('http')) {
-       
-        const encodedUrl = encodeURIComponent(imageUrl);
-        return `<img src="${imageUrl}" alt="${title}" class="balloon-image" onclick="openImageModal('${encodedUrl}')" style="width:200px; cursor:pointer; margin-top: 10px;">`;
+        const encodedImageUrl = encodeURI(imageUrl);
+        return `<img src="${encodedImageUrl}" alt="${title}" class="balloon-image" onclick="openImageModal('${encodedImageUrl}')" style="width:200px; cursor:pointer; margin-top: 10px;">`;
     } else {
-        
-        const folderName = encodeURIComponent(imageUrl);
+        const folderName = imageUrl;
+        const mappedFolderName = folderNameMapping[folderName] || folderName;
+        const encodedFolderName = encodeURIComponent(mappedFolderName);
         const images = [];
         const maxImages = 30; 
         for (let i = 1; i <= maxImages; i++) {
-            const imgSrc = `img/${folderName}/${i}.jpg`;
+            const imgSrc = `img/${encodedFolderName}/${i}.jpg`;
             images.push(`<img src="${imgSrc}" alt="${title} ${i}" class="balloon-image" onclick="openImageModal('${imgSrc}')" style="width:200px; cursor:pointer; margin-top: 10px;" onerror="this.style.display='none'; this.onerror=null;">`);
         }
         return images.join('');
     }
 }
+
 
