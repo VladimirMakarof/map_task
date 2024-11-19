@@ -816,12 +816,10 @@ window.openImageModal = function(imageUrl) {
 
 function generateImageHTML(imageUrl, title) {
     if (imageUrl.startsWith('http')) {
-
         const encodedUrl = encodeURIComponent(imageUrl);
         return `<img src="${imageUrl}" alt="${title}" class="balloon-image" onclick="openImageModal('${encodedUrl}')" style="width:200px; cursor:pointer; margin-top: 10px;">`;
     } else {
-
-        const folderName = encodeURIComponent(imageUrl);
+        const folderName = imageUrl; 
         const images = [];
         const maxImages = 30; 
         for (let i = 1; i <= maxImages; i++) {
@@ -831,11 +829,12 @@ function generateImageHTML(imageUrl, title) {
                      class="balloon-image" 
                      onclick="openImageModal('${imgSrc}')" 
                      style="width:200px; cursor:pointer; margin-top: 10px;" 
-                     onerror="console.warn('Image not found: ${imgSrc}'); this.style.display='none'; this.onerror=null;">
+                     onerror="console.warn('Image not found: ${imgSrc}'); this.style.display='none';">
             `);
         }
         return images.join('');
     }
 }
+
 
 
