@@ -10,8 +10,7 @@ const zoneMappings = {
     "48": "Ремонт и реконструкция",
     "47": "Озеленение",
     "46": "Социальная инфрастуктура",
-    "45": "Благоустройство",
-    "Проекты": "Проекты" 
+    "45": "Благоустройство" 
 };
 
 function sanitizeId(name) {
@@ -394,16 +393,16 @@ zones[zoneKey].label = new ymaps.Placemark(center, {
                 const secondDateContent = secondDate && secondDateLink
                     ? `<p class="date-link"><a href="${secondDateLink}" target="_blank">${secondDate}</a></p>`
                     : '';
-                const imageHTML = generateImageHTML(imageUrl, title);    
+
                 const placemark = new ymaps.Placemark([latitude, longitude], {
                     balloonContent: `
                         <div style="text-align: center;">
-            <div class="balloon-title">${title}</div>
-            ${firstDateContent}
-            ${secondDateContent}
-            <a href="${link}" target="_blank" class="balloon-link">Подробнее</a><br>
-            ${imageHTML} <!-- Подключаем сгенерированные изображения -->
-        </div>
+                            <div class="balloon-title">${title}</div>
+                            ${firstDateContent}
+                            ${secondDateContent}
+                            <a href="${link}" target="_blank" class="balloon-link">Подробнее</a><br>
+                            <img src="${imageUrl}" alt="${title}" class="balloon-image" onclick="openImageModal('${imageUrl}')" style="width:200px; cursor:pointer; margin-top: 10px;">
+                        </div>
                     `
                 }, {
                     preset: cleanIconPreset
@@ -810,38 +809,3 @@ window.openImageModal = function(imageUrl) {
         imageModal.classList.remove('hidden');
     }
 };
-
-
-
-
-function generateImageHTML(imageUrl, title) {
-    if (imageUrl.startsWith('http')) {
-        console.log(`Single image URL detected: ${imageUrl}`);
-        const encodedUrl = encodeURIComponent(imageUrl);
-        return `<img src="${imageUrl}" alt="${title}" class="balloon-image" onclick="openImageModal('${encodedUrl}')" style="width:200px; cursor:pointer; margin-top: 10px;">`;
-    } else {
-        const folderName = imageUrl.trim();
-        console.log(`Folder detected: ${folderName}`);
-        const images = [];
-        const maxImages = 10;
-        for (let i = 1; i <= maxImages; i++) {
-            const imgSrc = `img/${folderName}/${i}.jpg`;
-            console.log(`Checking image: ${imgSrc}`);
-            images.push(`
-                <img src="${imgSrc}" alt="${title} ${i}" 
-                     class="balloon-image" 
-                     onclick="openImageModal('${imgSrc}')" 
-                     style="width:200px; cursor:pointer; margin-top: 10px;" 
-                     onerror="console.warn('Image not found: ${imgSrc}'); this.style.display='none';">
-            `);
-        }
-        return images.join('');
-    }
-}
-
-
-
-
-
-
-
