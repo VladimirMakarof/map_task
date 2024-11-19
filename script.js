@@ -815,24 +815,41 @@ window.openImageModal = function(imageUrl) {
 
 
 function generateImageHTML(imageUrl, title) {
-    if (imageUrl.startsWith('http')) {
-        // Single image URL
-        const encodedImageUrl = encodeURI(imageUrl);
-        return `<img src="${encodedImageUrl}" alt="${title}" class="balloon-image" onclick="openImageModal('${encodedImageUrl}')" style="width:200px; cursor:pointer; margin-top: 10px;">`;
-    } else {
+    console.log('Generating image HTML:', { imageUrl, title });
 
-        const folderName = imageUrl;
+    if (!imageUrl) {
+        console.error('Image URL is undefined or empty!');
+        return '<p>Ошибка: URL изображения отсутствует.</p>';
+    }
+
+    if (imageUrl.startsWith('http')) {
+        console.log('Single image URL detected:', imageUrl);
+        const encodedImageUrl = encodeURI(imageUrl);
+        return `<img src="${encodedImageUrl}" alt="${title}" class="balloon-image" onclick="openImageModal('${encodedImageUrl}')" style="width:200px; cursor:pointer; margin-top: 10px;" onerror="this.style.display='none'; this.onerror=null;">`;
+    } else {
+        console.log('Folder detected:', imageUrl);
+        const folderName = imageUrl.trim();
         const encodedFolderName = encodeURIComponent(folderName);
         const images = [];
-        const maxImages = 10; 
+        const maxImages = 10;
+
         for (let i = 1; i <= maxImages; i++) {
             const imgSrc = `img/${encodedFolderName}/${i}.jpg`;
             const encodedImgSrc = encodeURI(imgSrc);
-            images.push(`<img src="${encodedImgSrc}" alt="${title} ${i}" class="balloon-image" onclick="openImageModal('${encodedImgSrc}')" style="width:200px; cursor:pointer; margin-top: 10px;" onerror="this.style.display='none'; this.onerror=null;">`);
+            console.log(`Checking image: ${encodedImgSrc}`);
+            images.push(`
+                <img src="${encodedImgSrc}" alt="${title} ${i}" class="balloon-image" 
+                     onclick="openImageModal('${encodedImgSrc}')" 
+                     style="width:200px; cursor:pointer; margin-top: 10px;" 
+                     onerror="console.warn('Image not found:', this.src); this.style.display='none';">
+            `);
         }
+
+        console.log('Generated HTML for images:', images.join(''));
         return images.join('');
     }
 }
+
 
 
 
