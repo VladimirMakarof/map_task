@@ -815,26 +815,40 @@ window.openImageModal = function(imageUrl) {
 
 
 function generateImageHTML(imageUrl, title) {
+    console.log('generateImageHTML вызвана с параметрами:', { imageUrl, title });
+
     if (imageUrl.startsWith('http')) {
         const encodedUrl = encodeURIComponent(imageUrl);
-        return `<img src="${imageUrl}" alt="${title}" class="balloon-image" onclick="openImageModal('${encodedUrl}')" style="width:200px; cursor:pointer; margin-top: 10px;">`;
+        console.log('Обрабатываем как ссылку:', imageUrl);
+        return `<img src="${imageUrl}" 
+                     alt="${title}" 
+                     class="balloon-image" 
+                     onclick="openImageModal('${encodedUrl}')" 
+                     style="width:200px; cursor:pointer; margin-top: 10px;" 
+                     onload="console.log('Image loaded successfully:', this.src)" 
+                     onerror="console.error('Failed to load image:', this.src); this.style.display='none';">`;
     } else {
-        const folderName = imageUrl; 
+        const folderName = imageUrl;
+        console.log('Обрабатываем как папку:', folderName);
         const images = [];
-        const maxImages = 30; 
+        const maxImages = 30;
         for (let i = 1; i <= maxImages; i++) {
             const imgSrc = `img/${folderName}/${i}.jpg`;
+            console.log('Проверяем изображение:', imgSrc);
             images.push(`
-                <img src="${imgSrc}" alt="${title} ${i}" 
+                <img src="${imgSrc}" 
+                     alt="${title} ${i}" 
                      class="balloon-image" 
                      onclick="openImageModal('${imgSrc}')" 
                      style="width:200px; cursor:pointer; margin-top: 10px;" 
-                     onerror="console.warn('Image not found: ${imgSrc}'); this.style.display='none';">
+                     onload="console.log('Image loaded successfully:', this.src)" 
+                     onerror="console.warn('Image not found or failed to load:', this.src); this.style.display='none';">
             `);
         }
         return images.join('');
     }
 }
+
 
 
 
