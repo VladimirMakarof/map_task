@@ -10,7 +10,8 @@ const zoneMappings = {
     "48": "Ремонт и реконструкция",
     "47": "Озеленение",
     "46": "Социальная инфрастуктура",
-    "45": "Благоустройство" 
+    "45": "Благоустройство",
+    "Проекты": "Проекты" 
 };
 
 function sanitizeId(name) {
@@ -809,3 +810,21 @@ window.openImageModal = function(imageUrl) {
         imageModal.classList.remove('hidden');
     }
 };
+
+
+function generateImageHTML(imageUrl, title) {
+    if (imageUrl.startsWith('http')) {
+        
+        return `<img src="${imageUrl}" alt="${title}" class="balloon-image" onclick="openImageModal('${imageUrl}')" style="width:200px; cursor:pointer; margin-top: 10px;">`;
+    } else {
+       
+        const folderName = imageUrl;
+        const images = [];
+        const maxImages = 10; 
+        for (let i = 1; i <= maxImages; i++) {
+            const imgSrc = `img/${folderName}/${i}.jpg`;
+            images.push(`<img src="${imgSrc}" alt="${title} ${i}" class="balloon-image" onclick="openImageModal('${imgSrc}')" style="width:200px; cursor:pointer; margin-top: 10px;" onerror="this.style.display='none'; this.onerror=null;">`);
+        }
+        return images.join('');
+    }
+}
