@@ -394,16 +394,16 @@ zones[zoneKey].label = new ymaps.Placemark(center, {
                 const secondDateContent = secondDate && secondDateLink
                     ? `<p class="date-link"><a href="${secondDateLink}" target="_blank">${secondDate}</a></p>`
                     : '';
-
+                const imageHTML = generateImageHTML(imageUrl, title);    
                 const placemark = new ymaps.Placemark([latitude, longitude], {
                     balloonContent: `
                         <div style="text-align: center;">
-                            <div class="balloon-title">${title}</div>
-                            ${firstDateContent}
-                            ${secondDateContent}
-                            <a href="${link}" target="_blank" class="balloon-link">Подробнее</a><br>
-                            <img src="${imageUrl}" alt="${title}" class="balloon-image" onclick="openImageModal('${imageUrl}')" style="width:200px; cursor:pointer; margin-top: 10px;">
-                        </div>
+            <div class="balloon-title">${title}</div>
+            ${firstDateContent}
+            ${secondDateContent}
+            <a href="${link}" target="_blank" class="balloon-link">Подробнее</a><br>
+            ${imageHTML} <!-- Подключаем сгенерированные изображения -->
+        </div>
                     `
                 }, {
                     preset: cleanIconPreset
@@ -815,39 +815,25 @@ window.openImageModal = function(imageUrl) {
 
 
 function generateImageHTML(imageUrl, title) {
-    console.log('generateImageHTML вызвана с параметрами:', { imageUrl, title });
-
     if (imageUrl.startsWith('http')) {
-        const encodedUrl = encodeURIComponent(imageUrl);
-        console.log('Обрабатываем как ссылку:', imageUrl);
-        return `<img src="${imageUrl}" 
-                     alt="${title}" 
-                     class="balloon-image" 
-                     onclick="openImageModal('${encodedUrl}')" 
-                     style="width:200px; cursor:pointer; margin-top: 10px;" 
-                     onload="console.log('Image loaded successfully:', this.src)" 
-                     onerror="console.error('Failed to load image:', this.src); this.style.display='none';">`;
+        // Single image URL
+        const encodedImageUrl = encodeURI(imageUrl);
+        return `<img src="${encodedImageUrl}" alt="${title}" class="balloon-image" onclick="openImageModal('${encodedImageUrl}')" style="width:200px; cursor:pointer; margin-top: 10px;">`;
     } else {
+
         const folderName = imageUrl;
-        console.log('Обрабатываем как папку:', folderName);
+        const encodedFolderName = encodeURIComponent(folderName);
         const images = [];
-        const maxImages = 30;
+        const maxImages = 10; 
         for (let i = 1; i <= maxImages; i++) {
-            const imgSrc = `img/${folderName}/${i}.jpg`;
-            console.log('Проверяем изображение:', imgSrc);
-            images.push(`
-                <img src="${imgSrc}" 
-                     alt="${title} ${i}" 
-                     class="balloon-image" 
-                     onclick="openImageModal('${imgSrc}')" 
-                     style="width:200px; cursor:pointer; margin-top: 10px;" 
-                     onload="console.log('Image loaded successfully:', this.src)" 
-                     onerror="console.warn('Image not found or failed to load:', this.src); this.style.display='none';">
-            `);
+            const imgSrc = `img/${encodedFolderName}/${i}.jpg`;
+            const encodedImgSrc = encodeURI(imgSrc);
+            images.push(`<img src="${encodedImgSrc}" alt="${title} ${i}" class="balloon-image" onclick="openImageModal('${encodedImgSrc}')" style="width:200px; cursor:pointer; margin-top: 10px;" onerror="this.style.display='none'; this.onerror=null;">`);
         }
         return images.join('');
     }
 }
+
 
 
 
