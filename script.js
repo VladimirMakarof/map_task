@@ -401,7 +401,7 @@ zones[zoneKey].label = new ymaps.Placemark(center, {
                             ${firstDateContent}
                             ${secondDateContent}
                             <a href="${link}" target="_blank" class="balloon-link">Подробнее</a><br>
-                            <img src="${imageUrl}" alt="${title}" class="balloon-image" style="width:200px; cursor:pointer; margin-top: 10px;">
+                            <img src="${imageUrl}" alt="${title}" class="balloon-image" onclick="openImageModal('${imageUrl}')" style="width:200px; cursor:pointer; margin-top: 10px;">
                         </div>
                     `
                 }, {
@@ -739,6 +739,24 @@ document.addEventListener("DOMContentLoaded", function() {
     const formButton = document.getElementById('form-button');
     const formPopup = document.getElementById('form-popup');
     const formHolder = document.getElementById('formHolder');
+    const imageModal = document.getElementById('image-modal');
+    const modalImage = document.getElementById('modal-image');
+    const closeImageModalButton = document.getElementById('close-image-modal');
+
+        if (closeImageModalButton) {
+        closeImageModalButton.addEventListener('click', function() {
+            imageModal.classList.add('hidden');
+            modalImage.src = ''; // Очищаем изображение
+        });
+    }
+
+    // Закрытие модального окна при клике вне его содержимого
+    imageModal.addEventListener('click', function(event) {
+        if (event.target === imageModal) {
+            imageModal.classList.add('hidden');
+            modalImage.src = ''; 
+        }
+    });
 
     if (formButton) {
         formButton.addEventListener('click', function() {
@@ -781,3 +799,13 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 
+// Функция для открытия модального окна с изображением
+window.openImageModal = function(imageUrl) {
+    const imageModal = document.getElementById('image-modal');
+    const modalImage = document.getElementById('modal-image');
+
+    if (imageModal && modalImage) {
+        modalImage.src = imageUrl;
+        imageModal.classList.remove('hidden');
+    }
+};
