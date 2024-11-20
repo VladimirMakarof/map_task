@@ -14,6 +14,12 @@ body {
     color: #333;
 }
 
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
 #container {
     display: flex;
     width: 100%;
@@ -22,11 +28,32 @@ body {
 
 #controls {
     width: 300px;
-    padding: 20px;
     background-color: #ffffff;
     border-right: 2px solid #0078FF;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    height: 100vh; 
 }
+
+#sections-container {
+    flex: 1 1 auto;
+    overflow-y: auto; 
+    padding: 20px;
+}
+
+#buttons-container {
+    flex: 0 0 auto;
+    padding: 10px;
+    border-top: 1px solid #ccc; 
+    height: 210px;
+}
+
+#buttons-container .button {
+    width: 100%;
+    margin-bottom: 10px;
+    box-sizing: border-box;
+}
+
 
 #controls h1 {
     color: #0078FF;
@@ -80,9 +107,10 @@ input[type="checkbox"] {
 }
 
 #map {
-    flex-grow: 1;
+    width: 100%;
     height: 100%;
-    transition: width 0.3s ease;
+    flex-grow: 1; 
+    transition: width 0.3s ease; 
 }
 
 .expanded-map {
@@ -99,7 +127,8 @@ input[type="checkbox"] {
     font-size: 14px;
     position: fixed;
     bottom: 20px;
-    left: 20px;
+    left: 10px;
+    width: 215px;
     z-index: 1000;
     opacity: 0.5;
 }
@@ -109,9 +138,6 @@ input[type="checkbox"] {
     opacity: 1;
 }
 
-.hidden {
-    display: none;
-}
 
 .balloon-image {
      max-width: 100%;
@@ -234,10 +260,10 @@ input[type="checkbox"] {
         border: none;
         cursor: pointer;
         font-size: 14px;
-        position: fixed;
+/*        position: fixed;
         bottom: 20px;
         left: 20px;
-        z-index: 1000;
+        z-index: 1000; */
         margin-right: 10px;
     }
 #form-button {
@@ -303,19 +329,17 @@ input[type="checkbox"] {
 
 
 .zone-button {
-    padding: 8px 12px;
-    font-size: 14px;
-    background-color: #0078FF;
+    display: inline-block; 
+    padding: 8px 12px; 
+    font-size: 14px; 
+    background-color: #0078FF; 
     color: #fff;
-    border: none;
-    border-radius: 5px;
+    border: none; 
+    border-radius: 5px; 
     cursor: pointer;
-    position: fixed;
-    bottom: 100px; 
-    right: 20px; 
-    z-index: 1000;
-    width: 170px;
-    text-align: center;
+   width: 215px;
+    text-align: center; 
+    margin: 10px 0; 
 }
 
 .zone-button:hover {
@@ -323,8 +347,8 @@ input[type="checkbox"] {
 }
 
 #zone-select{
-    left: 20px;
-    bottom: 110px;
+    left: 15px;
+    bottom: 70px;
 
 }
 
@@ -343,7 +367,7 @@ input[type="checkbox"] {
     border-radius: 5px;
 }
 
-#location-container {
+/*#location-container {
     position: fixed;
     bottom: 160px;
     left: 20px;
@@ -364,7 +388,7 @@ input[type="checkbox"] {
 
 .location-button:hover {
     background-color: #005bb5;
-}
+}*/
 
 #location-display {
     font-size: 14px;
