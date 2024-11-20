@@ -398,16 +398,19 @@ zones[zoneKey].label = new ymaps.Placemark(center, {
 
 const formattedDescription = description ? description.replace(/\n/g, '<br>') : ''; // Проверка на наличие описания
 
+const imageContent = imageUrl ? generateImageHTML(imageUrl, title) : '';
+
 const balloonContent = `
     <div style="text-align: center;">
         <div class="balloon-title">${title || ''}</div>
         ${firstDateContent ? `<div>${firstDateContent}</div>` : ''} 
         ${secondDateContent ? `<div>${secondDateContent}</div>` : ''} 
+        ${imageContent}
         <p>${formattedDescription}</p> 
         ${link ? `<a href="${link}" target="_blank" class="balloon-link">Подробнее</a><br>` : ''} 
-        ${imageUrl ? `<img src="${imageUrl}" alt="${title || 'Изображение'}" class="balloon-image" onclick="openImageModal('${imageUrl}')" style="width:200px; cursor:pointer; margin-top: 10px;">` : ''} 
     </div>
 `;
+
 
 const placemark = new ymaps.Placemark([latitude, longitude], {
     balloonContent: balloonContent
@@ -818,3 +821,92 @@ window.openImageModal = function(imageUrl) {
         imageModal.classList.remove('hidden');
     }
 };
+
+
+
+function generateImageHTML(imageUrl, title) {
+    const safeTitle = (title || 'Изображение')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+    const cleanedImageUrl = imageUrl.trim();
+
+    if (cleanedImageUrl.startsWith('http')) {
+        const encodedImageUrl = encodeURI(cleanedImageUrl);
+        return `<img src="${encodedImageUrl}" alt="${safeTitle}" class="balloon-image" onclick="openImageModal('${encodedImageUrl}')" style="width:200px; cursor:pointer; margin-top: 10px;">`;
+    } else {
+        const folderName = cleanedImageUrl.split('/').pop(); // Берём только последнюю часть пути
+        const encodedFolderName = encodeURIComponent(folderName);
+
+        return `<img src="https://raw.githubusercontent.com/VladimirMakarof/map_task/main/img/${encodedFolderName}/1.jpg" alt="${safeTitle}" class="balloon-image" onclick="openSlider('${folderName.replace(/'/g, "\\'")}')" style="width:200px; cursor:pointer; margin-top: 10px;">`;
+    }
+}
+
+
+
+
+function openSlider(folderName) {
+    const sliderModal = document.getElementById('slider-modal');
+    const sliderImage = document.getElementById('slider-image');
+
+    let slideImages = [];
+    let currentSlideIndex = 0;
+
+    // Оставляем только имя папки
+    const cleanedFolderName = folderName.split('/').pop(); // Берём последнюю часть пути
+    const encodedFolderName = encodeURIComponent(cleanedFolderName);
+
+    let i = 1;
+
+    function loadImages() {
+        const imgSrc = `https://raw.githubusercontent.com/VladimirMakarof/map_task/main/img/${encodedFolderName}/${i}.jpg`;
+        const img = new Image();
+        img.onload = () => {
+            slideImages.push(imgSrc);
+            i++;
+            loadImages(); 
+        };
+        img.onerror = () => {
+            if (slideImages.length > 0) {
+                startSlider();
+            } else {
+                alert('Изображения не найдены.');
+            }
+        };
+        img.src = imgSrc;
+    }
+
+    function startSlider() {
+        currentSlideIndex = 0;
+        updateSlide();
+        sliderModal.classList.remove('hidden');
+    }
+
+    function updateSlide() {
+        if (slideImages.length > 0) {
+            sliderImage.src = slideImages[currentSlideIndex];
+        } else {
+            sliderImage.src = ''; // Если нет изображений
+        }
+    }
+
+    function closeSlider() {
+        sliderModal.classList.add('hidden');
+    }
+
+    document.getElementById('next-slide').addEventListener('click', () => {
+        currentSlideIndex = (currentSlideIndex + 1) % slideImages.length;
+        updateSlide();
+    });
+
+    document.getElementById('prev-slide').addEventListener('click', () => {
+        currentSlideIndex = (currentSlideIndex - 1 + slideImages.length) % slideImages.length;
+        updateSlide();
+    });
+
+    document.getElementById('close-slider-modal').addEventListener('click', closeSlider);
+
+    // Начать загрузку изображений
+    loadImages();
+}
