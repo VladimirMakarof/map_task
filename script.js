@@ -484,7 +484,7 @@ function populateZoneDropdown() {
 
     // Добавляем опции по умолчанию
     zoneSelect.innerHTML = `
-        <option value="">Выберите зону:</option>
+        <option value="">Выберите округ:</option>
         <option value="all">Все</option>
     `;
 
@@ -500,7 +500,7 @@ function populateZoneDropdown() {
 
 
 function generateZoneHTML(zoneKey, zoneDisplayName, color) {
-    const controls = document.getElementById('controls');
+    const controls = document.getElementById('sections-container');
     const zoneDiv = document.createElement('div');
     zoneDiv.className = 'section';
     zoneDiv.id = `zone-section-${sanitizeId(zoneKey)}`;
@@ -731,19 +731,31 @@ function hideZonePolygon(zoneKey) {
     zone.polygonVisible = false;
 }
 
-    const controls = document.getElementById('controls');
-    const toggleButton = document.getElementById('toggle-button');
+const controls = document.getElementById('controls');
+const toggleButton = document.getElementById('toggle-button');
+const mapContainer = document.getElementById('map');
 
-    toggleButton.addEventListener('click', () => {
-        if (controls.classList.contains('hidden')) {
-            controls.classList.remove('hidden');
-            toggleButton.textContent = 'Скрыть настройки';
-        } else {
-            controls.classList.add('hidden');
-            toggleButton.textContent = 'Показать настройки';
+toggleButton.addEventListener('click', () => {
+    // Проверяем текущее состояние и меняем display
+    if (controls.style.display === 'none') {
+        controls.style.display = 'flex'; // Восстанавливаем flex
+        toggleButton.textContent = 'Скрыть настройки';
+    } else {
+        controls.style.display = 'none'; // Убираем flex
+        toggleButton.textContent = 'Показать настройки';
+    }
+
+    // Обновляем размеры карты
+    setTimeout(() => {
+        if (typeof myMap !== 'undefined' && myMap.container) {
+            myMap.container.fitToViewport();
         }
-        myMap.container.fitToViewport(); // Подстраиваем карту под изменения
-    });
+    }, 100); 
+});
+
+
+
+
 
 
 
