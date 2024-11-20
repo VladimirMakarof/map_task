@@ -4,57 +4,58 @@
     <meta charset="UTF-8">
     <title>Карта с Участками и Объектами</title>
     <link rel="stylesheet" href="styles.css">
-    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <link rel="icon" href="function.ico" type="image/x-icon">
     <script src="https://api-maps.yandex.ru/2.1/?apikey=0466250c-97ea-4e27-8c2c-cef3a58398a4&lang=ru_RU" type="text/javascript"></script>
     <script src="script.js" defer></script>
 </head>
 <body>
     <div id="container">
         <div id="controls">
-            <h1>Настройки карты</h1>
-            <!-- Настройки карты -->
-            <div id="zone-container">
-                <select id="zone-select" class="zone-button">
-                    <option value="">Выберите зону:</option>
-                    <option value="all">Все</option>
-                    <option value="47">47</option>
-                    <option value="48">48</option>
-                    <option value="46">46</option>
-                    <option value="45">45</option>
-                </select>
+            <!-- Контейнер для секций -->
+            <div id="sections-container">
+                <!-- Здесь будут генерироваться ваши секции с классом 'section' -->
             </div>
-            
 
-
-            <!-- Кнопки управления -->
-            <div id="controls-buttons">
+            <!-- Контейнер для кнопок -->
+            <div id="buttons-container">
+                <!-- Ваши кнопки -->
+                <div id="zone-container">
+                    <select id="zone-select" class="zone-button">
+                        <option value="">Выберите округ:</option>
+                        <option value="all">Все</option>
+                        <option value="47">47</option>
+                        <option value="48">48</option>
+                        <option value="46">46</option>
+                        <option value="45">45</option>
+                    </select>
+                </div>
                 <button id="form-button" class="button">Форма</button>
                 <button id="open-photo-modal" class="button">Открыть камеру</button>
-                <button id="toggle-button" class="button">Скрыть настройки</button>
             </div>
         </div>
 
+        <!-- Кнопка скрытия/показа настроек -->
+        <button id="toggle-button" class="button">Скрыть настройки</button>
+
         <!-- Модальное окно для камеры -->
- <div id="photo-modal" class="modal hidden">
-    <div class="modal-content">
-        <span id="close-modal" class="close">&times;</span>
-        <video id="camera" autoplay></video>
-        <canvas id="snapshot" class="hidden"></canvas>
-        
-        <!-- Кнопки управления -->
-        <div class="photo-buttons">
-            <button id="take-photo" class="button">Сделать фото</button>
-            <button id="save-photo" class="button hidden">Сохранить фото</button>
-            <button id="retake-photo" class="button hidden">Переснять фото</button>
+        <div id="photo-modal" class="modal hidden">
+            <div class="modal-content">
+                <span id="close-modal" class="close">&times;</span>
+                <video id="camera" autoplay></video>
+                <canvas id="snapshot" class="hidden"></canvas>
+                <!-- Кнопки управления -->
+                <div class="photo-buttons">
+                    <button id="take-photo" class="button">Сделать фото</button>
+                    <button id="save-photo" class="button hidden">Сохранить фото</button>
+                    <button id="retake-photo" class="button hidden">Переснять фото</button>
+                </div>
+            </div>
         </div>
-    </div>
-</div>
 
-<!-- Информирование после сохранения -->
-<div id="photo-status" class="hidden">
-    Фото сохранено! Вы можете прикрепить его к форме.
-</div>
-
+        <!-- Информирование после сохранения -->
+        <div id="photo-status" class="hidden">
+            Фото сохранено! Вы можете прикрепить его к форме.
+        </div>
 
         <!-- Модальное окно для формы -->
         <div id="form-popup" class="form-popup hidden">
@@ -64,7 +65,7 @@
             </div>
         </div>
 
- <!-- Модальное окно для отображения изображения -->
+        <!-- Модальное окно для отображения изображения -->
         <div id="image-modal" class="modal hidden">
             <div class="modal-content">
                 <span id="close-image-modal" class="close">&times;</span>
@@ -83,9 +84,6 @@
                 </div>
             </div>
         </div>
-
-
-
 
         <!-- Карта -->
         <div id="map"></div>
