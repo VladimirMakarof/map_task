@@ -11,7 +11,7 @@ const zoneMappings = {
     "47": "Озеленение",
     "46": "Социальная инфрастуктура",
     "45": "Благоустройство",
-    "Проекты": "Проекты" 
+    "Проекты": "Проекты"
 };
 
 function sanitizeId(name) {
@@ -362,7 +362,7 @@ zones[zoneKey].label = new ymaps.Placemark(center, {
                 const [
                     id, group, subgroup, title, lat, lon, link, imageUrl, iconPreset,
                     , // Пропускаем столбец "Координаты полигона"
-                    firstDate, firstDateLink, secondDate, secondDateLink
+                    firstDate, firstDateLink, secondDate, secondDateLink, description
                 ] = rows[i];
 
                 const latitude = parseFloat(lat);
@@ -395,19 +395,27 @@ zones[zoneKey].label = new ymaps.Placemark(center, {
                     ? `<p class="date-link"><a href="${secondDateLink}" target="_blank">${secondDate}</a></p>`
                     : '';
 
-                const placemark = new ymaps.Placemark([latitude, longitude], {
-                    balloonContent: `
-                        <div style="text-align: center;">
-                            <div class="balloon-title">${title}</div>
-                            ${firstDateContent}
-                            ${secondDateContent}
-                            <a href="${link}" target="_blank" class="balloon-link">Подробнее</a><br>
-                            <img src="${imageUrl}" alt="${title}" class="balloon-image" onclick="openImageModal('${imageUrl}')" style="width:200px; cursor:pointer; margin-top: 10px;">
-                        </div>
-                    `
-                }, {
-                    preset: cleanIconPreset
-                });
+
+const formattedDescription = description ? description.replace(/\n/g, '<br>') : ''; // Проверка на наличие описания
+
+const balloonContent = `
+    <div style="text-align: center;">
+        <div class="balloon-title">${title || ''}</div>
+        ${firstDateContent ? `<div>${firstDateContent}</div>` : ''} 
+        ${secondDateContent ? `<div>${secondDateContent}</div>` : ''} 
+        <p>${formattedDescription}</p> 
+        ${link ? `<a href="${link}" target="_blank" class="balloon-link">Подробнее</a><br>` : ''} 
+        ${imageUrl ? `<img src="${imageUrl}" alt="${title || 'Изображение'}" class="balloon-image" onclick="openImageModal('${imageUrl}')" style="width:200px; cursor:pointer; margin-top: 10px;">` : ''} 
+    </div>
+`;
+
+const placemark = new ymaps.Placemark([latitude, longitude], {
+    balloonContent: balloonContent
+}, {
+    preset: cleanIconPreset
+});
+
+
 
                 // Добавляем placemark в нужную группу/подгруппу
                 targetArray.push({ id, placemark });
