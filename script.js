@@ -845,61 +845,54 @@ function generateImageHTML(imageUrl, title) {
     const cleanedImageUrl = imageUrl.trim();
     const supportedFormats = ['.jpg', '.jpeg', '.png', '.webp', '.gif']; // Поддерживаемые форматы
 
-    // Если URL начинается с http, возвращаем как есть
+    // Если URL начинается с http, сразу возвращаем его
     if (cleanedImageUrl.startsWith('http')) {
         const encodedImageUrl = encodeURI(cleanedImageUrl);
         return `<img src="${encodedImageUrl}" alt="${safeTitle}" class="balloon-image" onclick="openImageModal('${encodedImageUrl}')" style="width:200px; cursor:pointer; margin-top: 10px;">`;
     }
 
-    // Если URL локальный, проверяем на поддерживаемые форматы
-    const folderName = cleanedImageUrl.split('/').pop(); // Последняя часть пути (имя папки)
+    // Для локальной папки ищем изображение с подходящим форматом
+    const folderName = cleanedImageUrl.split('/').pop(); // Имя папки
     const encodedFolderName = encodeURIComponent(folderName);
 
-    // Функция для проверки изображения с поддержкой нескольких форматов
-    function findImageInFolder(folderName, callback) {
-        let found = false;
-
-        supportedFormats.forEach((format, index) => {
-            const imgSrc = `https://raw.githubusercontent.com/VladimirMakarof/map_task/main/img/${folderName}/1${format}`;
-            const img = new Image();
-
-            img.onload = () => {
-                if (!found) {
-                    found = true; // Устанавливаем, что изображение найдено
-                    callback(imgSrc);
-                }
-            };
-
-            img.onerror = () => {
-                if (index === supportedFormats.length - 1 && !found) {
-                    callback(null); // Если ни один формат не найден
-                }
-            };
-
-            img.src = imgSrc;
-        });
-    }
-
-    // Генерация HTML с проверкой форматов
-    return `
-        <div class="balloon-image-container" style="width:200px; margin-top: 10px; cursor:pointer;" onclick="openSlider('${folderName.replace(/'/g, "\\'")}')">
-            <img src="" alt="${safeTitle}" class="balloon-image-loading" style="width:200px;">
-        </div>
+    // Генерация HTML с плейсхолдером для загрузки изображения
+    const imgElementId = `img-${Math.random().toString(36).substr(2, 9)}`; // Уникальный ID
+    let html = `
+        <img id="${imgElementId}" src="" alt="${safeTitle}" class="balloon-image-loading" style="width:200px; cursor:pointer; margin-top: 10px;" onclick="openSlider('${folderName.replace(/'/g, "\\'")}')">
         <script>
             (function() {
-                const container = document.querySelector('.balloon-image-container img');
-                findImageInFolder('${encodedFolderName}', function(imgSrc) {
-                    if (imgSrc) {
-                        container.src = imgSrc; // Устанавливаем найденное изображение
-                        container.classList.remove('balloon-image-loading');
-                    } else {
-                        container.alt = 'Изображение не найдено';
-                    }
+                const imgElement = document.getElementById('${imgElementId}');
+                const supportedFormats = ${JSON.stringify(supportedFormats)};
+                let found = false;
+
+                // Функция для проверки изображений с разными форматами
+                supportedFormats.forEach((format, index) => {
+                    if (found) return;
+                    const imgSrc = 'https://raw.githubusercontent.com/VladimirMakarof/map_task/main/img/${encodedFolderName}/1' + format;
+                    const testImg = new Image();
+
+                    testImg.onload = () => {
+                        if (!found) {
+                            found = true;
+                            imgElement.src = imgSrc; // Устанавливаем найденное изображение
+                            imgElement.classList.remove('balloon-image-loading');
+                        }
+                    };
+
+                    testImg.onerror = () => {
+                        if (index === supportedFormats.length - 1 && !found) {
+                            imgElement.alt = 'Изображение не найдено'; // Если ничего не найдено
+                        }
+                    };
+
+                    testImg.src = imgSrc;
                 });
             })();
         </script>
     `;
+    return html;
 }
+
 
 
 
