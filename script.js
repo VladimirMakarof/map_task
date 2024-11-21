@@ -843,16 +843,62 @@ function generateImageHTML(imageUrl, title) {
         .replace(/>/g, '&gt;');
 
     const cleanedImageUrl = imageUrl.trim();
+    const supportedFormats = ['.jpg', '.jpeg', '.png', '.webp', '.gif']; // Поддерживаемые форматы
 
+    // Если URL начинается с http, возвращаем как есть
     if (cleanedImageUrl.startsWith('http')) {
         const encodedImageUrl = encodeURI(cleanedImageUrl);
         return `<img src="${encodedImageUrl}" alt="${safeTitle}" class="balloon-image" onclick="openImageModal('${encodedImageUrl}')" style="width:200px; cursor:pointer; margin-top: 10px;">`;
-    } else {
-        const folderName = cleanedImageUrl.split('/').pop(); // Берём только последнюю часть пути
-        const encodedFolderName = encodeURIComponent(folderName);
-
-        return `<img src="https://raw.githubusercontent.com/VladimirMakarof/map_task/main/img/${encodedFolderName}/1.jpg" alt="${safeTitle}" class="balloon-image" onclick="openSlider('${folderName.replace(/'/g, "\\'")}')" style="width:200px; cursor:pointer; margin-top: 10px;">`;
     }
+
+    // Если URL локальный, проверяем на поддерживаемые форматы
+    const folderName = cleanedImageUrl.split('/').pop(); // Последняя часть пути (имя папки)
+    const encodedFolderName = encodeURIComponent(folderName);
+
+    // Функция для проверки изображения с поддержкой нескольких форматов
+    function findImageInFolder(folderName, callback) {
+        let found = false;
+
+        supportedFormats.forEach((format, index) => {
+            const imgSrc = `https://raw.githubusercontent.com/VladimirMakarof/map_task/main/img/${folderName}/1${format}`;
+            const img = new Image();
+
+            img.onload = () => {
+                if (!found) {
+                    found = true; // Устанавливаем, что изображение найдено
+                    callback(imgSrc);
+                }
+            };
+
+            img.onerror = () => {
+                if (index === supportedFormats.length - 1 && !found) {
+                    callback(null); // Если ни один формат не найден
+                }
+            };
+
+            img.src = imgSrc;
+        });
+    }
+
+    // Генерация HTML с проверкой форматов
+    return `
+        <div class="balloon-image-container" style="width:200px; margin-top: 10px; cursor:pointer;" onclick="openSlider('${folderName.replace(/'/g, "\\'")}')">
+            <img src="" alt="${safeTitle}" class="balloon-image-loading" style="width:200px;">
+        </div>
+        <script>
+            (function() {
+                const container = document.querySelector('.balloon-image-container img');
+                findImageInFolder('${encodedFolderName}', function(imgSrc) {
+                    if (imgSrc) {
+                        container.src = imgSrc; // Устанавливаем найденное изображение
+                        container.classList.remove('balloon-image-loading');
+                    } else {
+                        container.alt = 'Изображение не найдено';
+                    }
+                });
+            })();
+        </script>
+    `;
 }
 
 
@@ -861,52 +907,76 @@ function generateImageHTML(imageUrl, title) {
 function openSlider(folderName) {
     const sliderModal = document.getElementById('slider-modal');
     const sliderImage = document.getElementById('slider-image');
-
+    const supportedFormats = ['.jpg', '.jpeg', '.png', '.webp', '.gif']; // Поддерживаемые форматы
+    const imageCache = {}; // Локальный кэш для этой функции
     let slideImages = [];
     let currentSlideIndex = 0;
 
-    // Оставляем только имя папки
-    const cleanedFolderName = folderName.split('/').pop(); // Берём последнюю часть пути
+    // Очистка имени папки
+    const cleanedFolderName = folderName.split('/').pop();
     const encodedFolderName = encodeURIComponent(cleanedFolderName);
 
-    let i = 1;
+    let i = 1; // Индекс изображения
 
-    function loadImages() {
-        const imgSrc = `https://raw.githubusercontent.com/VladimirMakarof/map_task/main/img/${encodedFolderName}/${i}.jpg`;
-        const img = new Image();
-        img.onload = () => {
-            slideImages.push(imgSrc);
-            i++;
-            loadImages(); 
-        };
-        img.onerror = () => {
-            if (slideImages.length > 0) {
-                startSlider();
-            } else {
-                alert('Изображения не найдены.');
+    // Функция для поиска изображения с кэшированием
+    function findImageCached(folderName, imageName, callback) {
+        const key = `${folderName}/${imageName}`;
+        if (imageCache[key]) {
+            callback(imageCache[key]);
+            return;
+        }
+
+        findImage(folderName, imageName, (imgSrc) => {
+            if (imgSrc) {
+                imageCache[key] = imgSrc; // Кэшируем успешный результат
             }
-        };
-        img.src = imgSrc;
+            callback(imgSrc);
+        });
     }
 
+    // Рекурсивная загрузка изображений
+    function loadNextImage() {
+        let found = false;
+
+        supportedFormats.forEach((format, index) => {
+            const imageName = `${i}${format}`;
+            findImageCached(encodedFolderName, imageName, (imgSrc) => {
+                if (imgSrc && !found) {
+                    found = true; // Устанавливаем, что изображение найдено
+                    slideImages.push(imgSrc); // Добавляем изображение в массив
+                    i++;
+                    loadNextImage(); // Переходим к следующему изображению
+                } else if (index === supportedFormats.length - 1 && !found) {
+                    if (slideImages.length > 0) {
+                        startSlider(); // Если найдены изображения, запускаем слайдер
+                    } else if (i === 1) {
+                        alert('Изображения не найдены.'); // Если нет изображений
+                    }
+                }
+            });
+        });
+    }
+
+    // Запуск слайдера
     function startSlider() {
         currentSlideIndex = 0;
         updateSlide();
         sliderModal.classList.remove('hidden');
     }
 
+    // Обновление текущего изображения
     function updateSlide() {
         if (slideImages.length > 0) {
             sliderImage.src = slideImages[currentSlideIndex];
-        } else {
-            sliderImage.src = ''; // Если нет изображений
         }
     }
 
+    // Закрытие слайдера
     function closeSlider() {
         sliderModal.classList.add('hidden');
     }
 
+    // Навигация по слайдам
     document.getElementById('next-slide').addEventListener('click', () => {
         currentSlideIndex = (currentSlideIndex + 1) % slideImages.length;
         updateSlide();
@@ -920,5 +990,16 @@ function openSlider(folderName) {
     document.getElementById('close-slider-modal').addEventListener('click', closeSlider);
 
     // Начать загрузку изображений
-    loadImages();
+    loadNextImage();
+}
+
+// Вспомогательная функция findImage
+function findImage(folderName, imageName, callback) {
+    const imgSrc = `https://raw.githubusercontent.com/VladimirMakarof/map_task/main/img/${folderName}/${imageName}`;
+    const img = new Image();
+
+    img.onload = () => callback(imgSrc);
+    img.onerror = () => callback(null);
+
+    img.src = imgSrc;
 }
